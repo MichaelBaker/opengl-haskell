@@ -22,7 +22,6 @@ startWindow windowName layers = do
 
   displayCallback $= display layers
   idleCallback    $= Just idle
-  reshapeCallback $= Just reshape
 
   mainLoop
 
@@ -35,9 +34,3 @@ display layers = do
   flush
 
 idle = postRedisplay Nothing
-
-reshape windowSize@(Size width height) = do
-  viewport   $= (Position 0 0, windowSize)
-  matrixMode $= Projection
-  loadIdentity
-  ortho2D 0 (fromIntegral width) 0 (fromIntegral height)
