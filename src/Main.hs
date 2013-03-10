@@ -14,11 +14,11 @@ colorize (a, color) = Color color a
 
 main = do
   layers <- newTVarIO [rotate X 0 $ rotate Y 0 daCube]
-  forkIO $ spin layers 0.0 0.0 daCube
+  forkIO $ spin layers 0 0 daCube
   startWindow "Ohai" layers
 
 spin store x y cube = do
   atomically $ writeTVar store [rotate X x $ rotate Y y cube]
   threadDelay 30000
-  spin store (x + 5) (y + 3) cube
+  spin store (x + 5) (y + 2) cube
 

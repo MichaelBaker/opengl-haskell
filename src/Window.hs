@@ -19,6 +19,9 @@ startWindow windowName layers = do
   lineSmooth    $= Enabled
   pointSmooth   $= Enabled
   polygonSmooth $= Enabled
+  polygonMode   $= (Fill, Fill)
+  frontFace     $= CCW
+  depthFunc     $= Just Less
 
   displayCallback $= display layers
   idleCallback    $= Just idle
