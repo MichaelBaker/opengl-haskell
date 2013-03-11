@@ -2,16 +2,30 @@
 
 module Draw where
 
-import Graphics.Rendering.OpenGL hiding (Face, Line, rotate, Color)
+import Graphics.Rendering.OpenGL hiding (Face, Line, rotate, Color, color)
 import qualified Graphics.Rendering.OpenGL as G
 
-data Face       = Face [(Float, Float, Float)]
-data Line       = Line [(Float, Float, Float)]
-data Rotation a = Rotation Axis Float a
-data Axis       = X | Y | Z
-data Color a    = Color Float a
+data Face           = Face [(Float, Float, Float)]
+                    | TFace [Transformation] Face
+data Line           = Line [(Float, Float, Float)]
+data Axis           = X | Y | Z
+data Coordinates    = Coordinates
+data Transformation = Rotation Axis Float
+                    | Color Float
+                    | Translation Axis Float
+                    | Scale Axis Float
 
-rotate = Rotation
+rotate axis degree face@(Face _)   = TFace [Rotation axis degree] face
+rotate axis degree (TFace ts face) = TFace (Rotation axis degree : ts) face
+
+color c face@(Face _)   = TFace [Color c] face
+color c (TFace ts face) = TFace (Color c : ts) face
+
+translate axis amount face@(Face _)   = TFace [Translation axis amount] face
+translate axis amount (TFace ts face) = TFace (Translation axis amount : ts) face
+
+scale axis amount face@(Face _)   = TFace [Scale axis amount] face
+scale axis amount (TFace ts face) = TFace (Scale axis amount : ts) face
 
 cube :: Float -> [Face]
 cube side = [a, b, c, d, e, f]
@@ -45,25 +59,45 @@ instance Draw (Float, Float, Float) where
 
 instance Draw Face where
   draw (Face verticies) = renderPrimitive Polygon $ mapM_ draw verticies
+  draw (TFace ts face)  = preservingMatrix $ do
+    mapM_ draw ts
+    draw face
 
 instance Draw Line where
   draw (Line verticies) = renderPrimitive LineStrip $ mapM_ draw verticies
 
-instance (Draw a) => Draw (Rotation a) where
-  draw (Rotation axis angle a) = do
-    preservingMatrix $ do
-      G.rotate (vtf angle) (axisToVector axis)
-      draw a
+instance Draw Transformation where
+  draw (Translation axis amount) = G.translate (scaleVector (axisToTuple axis) amount)
+  draw (Rotation axis angle)     = G.rotate (vtf angle) (axisToVector axis)
+  draw (Color c)                 = G.color $ Color4 (vtf c) (vtf c) (vtf c) (vtf 1)
+  draw (Scale X amount)          = G.scale (vtf amount) 1 1
+  draw (Scale Y amount)          = G.scale 1 (vtf amount) 1
+  draw (Scale Z amount)          = G.scale 1 1 (vtf amount)
 
-instance (Draw a) => Draw (Color a) where
-  draw (Color c a) = do
-    color $ Color4 (vtf c) (vtf c) (vtf c) (vtf 1)
-    draw a
+instance Draw Coordinates where
+  draw Coordinates = do
+    renderPrimitive LineStrip $ do
+      G.color $ Color4 1 0 0 (vtf 1)
+      drawVertex3 (0, 0, 0)
+      drawVertex3 (0.5, 0, 0)
+    renderPrimitive LineStrip $ do
+      G.color $ Color4 0 1 0 (vtf 1)
+      drawVertex3 (0, 0, 0)
+      drawVertex3 (0, 0.5, 0)
+    renderPrimitive LineStrip $ do
+      G.color $ Color4 0 0 1 (vtf 1)
+      drawVertex3 (0, 0, 0)
+      drawVertex3 (0, 0, 1)
 
 axisToVector :: Axis -> Vector3 GLfloat
 axisToVector X = vector3 1 0 0
 axisToVector Y = vector3 0 1 0
 axisToVector Z = vector3 0 0 1
+
+axisToTuple :: Axis -> (Float, Float, Float)
+axisToTuple X = (1, 0, 0)
+axisToTuple Y = (0, 1, 0)
+axisToTuple Z = (0, 0, 1)
 
 vtf :: Float -> GLfloat
 vtf = realToFrac
@@ -79,3 +113,5 @@ vertex3 x y z = Vertex3 (realToFrac x) (realToFrac y) (realToFrac z)
 
 vector3 :: Float -> Float -> Float -> Vector3 GLfloat
 vector3 x y z = Vector3 (realToFrac x) (realToFrac y) (realToFrac z)
+
+scaleVector (a, b, c) x = vector3 (a*x) (b*x) (c*x)

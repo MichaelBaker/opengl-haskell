@@ -1,7 +1,14 @@
+import Prelude hiding         ((.), id)
 import Control.Concurrent.STM (newTVarIO, atomically, writeTVar)
-import Control.Concurrent     (forkIO, threadDelay)
+import Control.Concurrent     (forkIO)
+import Control.Wire
 import Window                 (startWindow)
 import Draw
+
+main = do
+  layers <- newTVarIO [map (rotate X 0) $ map (rotate Y 0) daCube]
+  forkIO $ spin layers daCube rotation clockSession
+  startWindow "Ohai" layers
 
 daCube = colorFaces $ cube 0.9
 
@@ -9,16 +16,23 @@ colorFaces faces = map colorize $ zip faces colors
 
 colors = cycle [0.1, 0.2..0.9]
 
-colorize :: (a, Float) -> Color a
-colorize (a, color) = Color color a
+colorize :: (Face, Float) -> Face
+colorize (a, c) = color c a
 
-main = do
-  layers <- newTVarIO [rotate X 0 $ rotate Y 0 daCube]
-  forkIO $ spin layers 0 0 daCube
-  startWindow "Ohai" layers
+constant :: Double -> WireP a Double -> WireP a Float
+constant initial speed = realToFrac <$> integral_ initial . speed
 
-spin store x y cube = do
-  atomically $ writeTVar store [rotate X x $ rotate Y y cube]
-  threadDelay 30000
-  spin store (x + 5) (y + 2) cube
+rotation = liftA2 (,) (constant 0 80) (constant 0 100)
+
+spin store cube rotation session = do
+  (value, rotation', session') <- stepSessionP rotation session ()
+  update value store cube
+  spin store cube rotation' session'
+
+update (Right (x, y)) store cube = atomically $ do
+  writeTVar store [
+    map (scale Y (abs $ cos x)) $ map (scale X (abs $ sin x)) $ map (translate X 0.5) $ map (rotate X x) $ map (rotate Y y) cube,
+    map (rotate Z y) $ map (translate X 0.5) $ map (rotate X x) $ map (rotate Y y)cube
+    ]
+update _ _ _ = return ()
 
