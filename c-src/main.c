@@ -191,6 +191,8 @@ int main(int argc, char** argv)
     return 1;
   }
 
+  glClearColor(1.0, 1.0, 1.0, 1.0);
+  glClear(GL_COLOR_BUFFER_BIT);
   glutMainLoop();
   return 0;
 }
