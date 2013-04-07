@@ -9,8 +9,10 @@ main = do
   openWindow defaultDisplayOptions
   setWindowTitle "Hello World"
   setWindowDimensions 400 300
+
   glfwVersion <- getGlfwVersion
   glVersion   <- getGlVersion
+
   case checkVersions glfwVersion glVersion of
     (Left  error)    -> putStrLn error
     (Right versions) -> putStrLn versions >> windowLoop
