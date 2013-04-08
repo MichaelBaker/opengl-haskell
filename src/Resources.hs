@@ -24,7 +24,7 @@ data VertexArray = VertexArray { vertexBuffer   :: GLuint
                                , attribute      :: GLuint
                                , itemsPerVertex :: GLint
                                , itemType       :: GLenum
-                               , itemSize       :: GLsizei
+                               , vertexSize     :: GLsizei
                                }
 
 enableAttributePointer vertexArray = do
@@ -34,7 +34,7 @@ enableAttributePointer vertexArray = do
     (itemsPerVertex vertexArray)
     (itemType       vertexArray)
     0
-    (itemSize       vertexArray)
+    (vertexSize     vertexArray)
     nullPtr
   glEnableVertexAttribArray (attribute vertexArray)
 
@@ -49,13 +49,14 @@ drawElements elementArray = do
     nullPtr
 
 vertexList :: [GLfloat]
-vertexList = [ -1.0, -1.0
-             ,  1.0, -1.0
-             , -1.0,  1.0
+vertexList = [ -1.0, -1.0, 0.0, 1.0
+             ,  1.0, -1.0, 0.0, 1.0
+             , -1.0,  1.0, 0.0, 1.0
+             ,  1.0,  1.0, 0.0, 1.0
              ]
 
 elementList :: [GLshort]
-elementList = [0, 1, 2]
+elementList = [0, 1, 2, 1, 2, 3]
 
 createResources = do
   vertexArrayPtr  <- newArray vertexList
@@ -67,8 +68,8 @@ createResources = do
   program  <- createProgram vShader fShader
   position <- withCString "position" $ \str -> glGetAttribLocation program str
 
-  let elementArray = ElementArray eBuffer gl_TRIANGLES 3 gl_UNSIGNED_SHORT
-      vertexArray  = VertexArray  vBuffer (fromIntegral position) 2 gl_FLOAT (fromIntegral $ sizeOf (0 :: GLfloat))
+  let elementArray = ElementArray eBuffer gl_TRIANGLES 6 gl_UNSIGNED_SHORT
+      vertexArray  = VertexArray  vBuffer (fromIntegral position) 4 gl_FLOAT (fromIntegral $ 4 * sizeOf (0 :: GLfloat))
 
   return $ Resources vertexArray elementArray vShader fShader program
 
