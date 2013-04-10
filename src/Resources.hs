@@ -2,17 +2,9 @@ module Resources where
 
 import Graphics.Rendering.OpenGL.Raw
 import Foreign.Marshal.Alloc
-import Foreign.Marshal.Array
 import Foreign.Storable
 import Foreign.Ptr
 import Foreign.C.String
-
-data Resources = Resources { verticies      :: VertexArray
-                           , elements       :: ElementArray
-                           , vertexShader   :: GLuint
-                           , fragmentShader :: GLuint
-                           , program        :: GLuint
-                           }
 
 data ElementArray = ElementArray { elementBuffer :: GLuint
                                  , triangleType  :: GLenum
@@ -20,25 +12,26 @@ data ElementArray = ElementArray { elementBuffer :: GLuint
                                  , indexType     :: GLenum
                                  }
 
-data VertexArray = VertexArray { vertexBuffer   :: GLuint
-                               , attribute      :: GLuint
-                               , itemsPerVertex :: GLint
-                               , itemType       :: GLenum
-                               , vertexSize     :: GLsizei
-                               }
+data AttributeArray = AttributeArray { attributeBuffer :: GLuint
+                                     , attribute       :: GLuint
+                                     , itemsPerVertex  :: GLint
+                                     , itemType        :: GLenum
+                                     , vertexSize      :: GLsizei
+                                     , offset          :: Ptr GLuint
+                                     }
 
-enableAttributePointer vertexArray = do
-  glBindBuffer gl_ARRAY_BUFFER (vertexBuffer vertexArray)
+enableAttribute attributeArray = do
+  glBindBuffer gl_ARRAY_BUFFER (attributeBuffer attributeArray)
   glVertexAttribPointer
-    (attribute      vertexArray)
-    (itemsPerVertex vertexArray)
-    (itemType       vertexArray)
+    (attribute      attributeArray)
+    (itemsPerVertex attributeArray)
+    (itemType       attributeArray)
     0
-    (vertexSize     vertexArray)
-    nullPtr
-  glEnableVertexAttribArray (attribute vertexArray)
+    (vertexSize     attributeArray)
+    (offset         attributeArray)
+  glEnableVertexAttribArray (attribute attributeArray)
 
-disableAttributePointer vertexArray = glDisableVertexAttribArray $ attribute vertexArray
+disableAttribute vertexArray = glDisableVertexAttribArray $ attribute vertexArray
 
 drawElements elementArray = do
   glBindBuffer gl_ELEMENT_ARRAY_BUFFER (elementBuffer elementArray)
@@ -48,36 +41,10 @@ drawElements elementArray = do
     (indexType    elementArray)
     nullPtr
 
-vertexList :: [GLfloat]
-vertexList = [ -1.0, -1.0, 0.0, 1.0
-             ,  1.0, -1.0, 0.0, 1.0
-             , -1.0,  1.0, 0.0, 1.0
-             ,  1.0,  1.0, 0.0, 1.0
-             ]
-
-elementList :: [GLshort]
-elementList = [0, 1, 2, 1, 2, 3]
-
-createResources = do
-  vertexArrayPtr  <- newArray vertexList
-  elementArrayPtr <- newArray elementList
-  vBuffer  <- createBuffer gl_ARRAY_BUFFER         vertexArrayPtr  (listSize vertexList)
-  eBuffer  <- createBuffer gl_ELEMENT_ARRAY_BUFFER elementArrayPtr (listSize elementList)
-  vShader  <- createShader gl_VERTEX_SHADER   "gl.v.glsl"
-  fShader  <- createShader gl_FRAGMENT_SHADER "gl.f.glsl"
-  program  <- createProgram vShader fShader
-  position <- withCString "position" $ \str -> glGetAttribLocation program str
-
-  let elementArray = ElementArray eBuffer gl_TRIANGLES 6 gl_UNSIGNED_SHORT
-      vertexArray  = VertexArray  vBuffer (fromIntegral position) 4 gl_FLOAT (fromIntegral $ 4 * sizeOf (0 :: GLfloat))
-
-  return $ Resources vertexArray elementArray vShader fShader program
-
-createProgram vShader fShader = do
+createProgram shaders = do
   alloca $ \programOk -> do
     program <- glCreateProgram
-    glAttachShader program vShader
-    glAttachShader program fShader
+    mapM_ (glAttachShader program) shaders
     glLinkProgram program
     glGetProgramiv program gl_LINK_STATUS programOk
     programOkVal <- peek programOk
@@ -102,14 +69,14 @@ createShader shaderType filename = do
             then error $ "Shader " ++ filename ++ " failed to compile"
             else return shader
 
-listSize list = fromIntegral $ sizeOf (head list) * length list
-
 createBuffer target bufferData size = do
   bufferPtr <- (malloc :: IO (Ptr GLuint))
   glGenBuffers 1 bufferPtr
-
   buffer <- peek bufferPtr
   glBindBuffer target buffer
   glBufferData target size bufferData gl_STATIC_DRAW
-
   return buffer
+
+attributeId program name = do
+  attribute <- withCString name $ \str -> glGetAttribLocation program str
+  return $ fromIntegral attribute
