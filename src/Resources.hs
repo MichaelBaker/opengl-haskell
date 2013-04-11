@@ -80,3 +80,7 @@ createBuffer target bufferData size = do
 attributeId program name = do
   attribute <- withCString name $ \str -> glGetAttribLocation program str
   return $ fromIntegral attribute
+
+uniformId program name = do
+  attribute <- withCString name $ \str -> glGetUniformLocation program str
+  return $ fromIntegral attribute

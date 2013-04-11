@@ -5,6 +5,7 @@ import Graphics.Rendering.OpenGL.Raw
 
 import Job
 import Resources
+import Renderable
 
 type Vertex = (GLfloat, GLfloat, GLfloat, GLfloat)
 
@@ -24,6 +25,16 @@ data Cube = Cube { face0 :: Face
                  , face4 :: Face
                  , face5 :: Face
                  }
+
+data CubeJob = CubeJob { job     :: Job
+                       , angleId :: GLint
+                       , angle   :: GLfloat
+                       }
+
+instance Renderable CubeJob where
+  render (CubeJob job angleId angle) = do
+    glUniform1f angleId angle
+    render job
 
 theCube = Cube
   (Face (-0.5,  0.5,  0.5, 1.0 )
@@ -66,7 +77,8 @@ createCube = do
   program    <- createCubeProgram
   attributes <- createCubeAttributes program
   elements   <- createCubeElements
-  return $ Job program attributes elements
+  uniform    <- createAngleUniform program
+  return $ CubeJob (Job program attributes elements) uniform 0.0
 
 createCubeProgram = do
   vertexShader   <- createShader gl_VERTEX_SHADER   "../../shaders/gl.v.glsl"
@@ -87,6 +99,13 @@ createCubeAttributes program = do
 
   return [positions, faceColors]
 
+createCubeElements = do
+  elementArrayPtr <- newArray elementArray
+  elementBuffer   <- createBuffer gl_ELEMENT_ARRAY_BUFFER elementArrayPtr (listSize elementArray)
+  return $ ElementArray elementBuffer gl_TRIANGLES (fromIntegral $ length elementArray) gl_UNSIGNED_SHORT
+
+createAngleUniform program = uniformId program "angle"
+
 floatSize = sizeOf (0 :: GLfloat)
 createOffset typeSize amount = plusPtr nullPtr $ typeSize * amount
 
@@ -94,11 +113,6 @@ printArray [] = return ()
 printArray array = do
   print $ take 4 array
   printArray $ drop 4 array
-
-createCubeElements = do
-  elementArrayPtr <- newArray elementArray
-  elementBuffer   <- createBuffer gl_ELEMENT_ARRAY_BUFFER elementArrayPtr (listSize elementArray)
-  return $ ElementArray elementBuffer gl_TRIANGLES (fromIntegral $ length elementArray) gl_UNSIGNED_SHORT
 
 attributeArray :: Cube -> [GLfloat]
 attributeArray cube = concat arrays
