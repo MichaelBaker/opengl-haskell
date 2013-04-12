@@ -37,52 +37,52 @@ instance Renderable CubeJob where
     render job
 
 theCube = Cube
-  (Face (-0.5,  0.5,  0.5, 1.0 )
-        ( 0.5,  0.5,  0.5, 1.0 )
-        ( 0.5, -0.5,  0.5, 1.0 )
-        (-0.5, -0.5,  0.5, 1.0 )
-        ( 0.0,  0.0,  0.0, 1.0 ))
+  (Face (-1.0,  1.0,  1.0, 1.0 )
+        ( 1.0,  1.0,  1.0, 1.0 )
+        ( 1.0, -1.0,  1.0, 1.0 )
+        (-1.0, -1.0,  1.0, 1.0 )
+        ( 1.0,  0.0,  0.0, 1.0 ))
 
-  (Face ( 0.5,  0.5,  0.5, 1.0 )
-        ( 0.5,  0.5, -0.5, 1.0 )
-        ( 0.5, -0.5, -0.5, 1.0 )
-        ( 0.5, -0.5,  0.5, 1.0 )
+  (Face ( 1.0,  1.0,  1.0, 1.0 )
+        ( 1.0,  1.0, -1.0, 1.0 )
+        ( 1.0, -1.0, -1.0, 1.0 )
+        ( 1.0, -1.0,  1.0, 1.0 )
         ( 0.1,  0.1,  0.1, 1.0 ))
 
-  (Face (-0.5,  0.5, -0.5, 1.0 )
-        ( 0.5,  0.5, -0.5, 1.0 )
-        ( 0.5, -0.5, -0.5, 1.0 )
-        (-0.5, -0.5, -0.5, 1.0 )
+  (Face (-1.0,  1.0, -1.0, 1.0 )
+        ( 1.0,  1.0, -1.0, 1.0 )
+        ( 1.0, -1.0, -1.0, 1.0 )
+        (-1.0, -1.0, -1.0, 1.0 )
         ( 0.2,  0.2,  0.2, 1.0 ))
 
-  (Face (-0.5,  0.5,  0.5, 1.0 )
-        (-0.5,  0.5, -0.5, 1.0 )
-        (-0.5, -0.5, -0.5, 1.0 )
-        (-0.5, -0.5,  0.5, 1.0 )
+  (Face (-1.0,  1.0,  1.0, 1.0 )
+        (-1.0,  1.0, -1.0, 1.0 )
+        (-1.0, -1.0, -1.0, 1.0 )
+        (-1.0, -1.0,  1.0, 1.0 )
         ( 0.3,  0.3,  0.3, 1.0 ))
 
-  (Face (-0.5,  0.5,  0.5, 1.0 )
-        (-0.5,  0.5, -0.5, 1.0 )
-        ( 0.5,  0.5, -0.5, 1.0 )
-        ( 0.5,  0.5,  0.5, 1.0 )
+  (Face (-1.0,  1.0,  1.0, 1.0 )
+        (-1.0,  1.0, -1.0, 1.0 )
+        ( 1.0,  1.0, -1.0, 1.0 )
+        ( 1.0,  1.0,  1.0, 1.0 )
         ( 0.4,  0.4,  0.4, 1.0 ))
 
-  (Face (-0.5, -0.5,  0.5, 1.0 )
-        (-0.5, -0.5, -0.5, 1.0 )
-        ( 0.5, -0.5, -0.5, 1.0 )
-        ( 0.5, -0.5,  0.5, 1.0 )
+  (Face (-1.0, -1.0,  1.0, 1.0 )
+        (-1.0, -1.0, -1.0, 1.0 )
+        ( 1.0, -1.0, -1.0, 1.0 )
+        ( 1.0, -1.0,  1.0, 1.0 )
         ( 0.5,  0.5,  0.5, 1.0 ))
 
-createCube = do
-  program    <- createCubeProgram
+createCube shader = do
+  program    <- createCubeProgram shader
   attributes <- createCubeAttributes program
   elements   <- createCubeElements
   uniform    <- createAngleUniform program
   return $ CubeJob (Job program attributes elements) uniform 0.0
 
-createCubeProgram = do
-  vertexShader   <- createShader gl_VERTEX_SHADER   "../../shaders/gl.v.glsl"
-  fragmentShader <- createShader gl_FRAGMENT_SHADER "../../shaders/gl.f.glsl"
+createCubeProgram shader = do
+  vertexShader   <- createShader gl_VERTEX_SHADER   $ concat ["../../shaders/", shader, ".v.glsl"]
+  fragmentShader <- createShader gl_FRAGMENT_SHADER $ concat ["../../shaders/", shader, ".f.glsl"]
   program        <- createProgram [vertexShader, fragmentShader]
   return program
 
@@ -119,8 +119,8 @@ attributeArray cube = concat arrays
   where arrays = map cubeAttributes (faces cube)
 
 cubeAttributes face = triangle0 ++ triangle1
-  where triangle0            = concat [listify vertex0 vertex1 vertex2]
-        triangle1            = concat [listify vertex2 vertex3 vertex0]
+  where triangle0            = concat [listify vertex2 vertex1 vertex0]
+        triangle1            = concat [listify vertex0 vertex3 vertex2]
         listify a b c        = concat $ map detuple [a face, color face, b face, color face, c face, color face]
         detuple (a, b, c, d) = [a, b, c, d]
 
