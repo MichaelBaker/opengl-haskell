@@ -1,4 +1,5 @@
 #version 110
+#define Pi 3.1416
 
 attribute vec4  position;
 attribute vec4  faceColor;

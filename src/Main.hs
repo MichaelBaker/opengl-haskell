@@ -5,12 +5,10 @@ import Data.Bits
 import Control.Concurrent.STM
 
 import Version
-import Cube
+import Cube (createCube, CubeJob(..))
 import Renderable
 
-data RotatingCube = RotatingCube { cube       :: CubeJob
-                                 , isRotating :: Bool
-                                 }
+data CubeView = CubeView { cube :: CubeJob }
 main = do
   initialize
   openWindow $ defaultDisplayOptions { displayOptions_numRedBits     = 8
@@ -33,52 +31,42 @@ main = do
     (Left  error)    -> putStrLn error
     (Right versions) -> do
       putStrLn versions
+      cubes  <- mapM (createCube "perspective-2") [(x, z) | z <- [1,4..30], x <- [-2, 2]]
+      tCubes <- newTVarIO $ map CubeView cubes
+      setKeyCallback $ monitor tCubes
+      windowLoop tCubes
 
-      cubeOrtho       <- createCube "ortho"
-      cubePerspective <- createCube "perspective"
-
-      tCubeOrtho       <- newTVarIO $ RotatingCube cubeOrtho       False
-      tCubePerspective <- newTVarIO $ RotatingCube cubePerspective False
-
-      setKeyCallback $ monitor tCubeOrtho tCubePerspective
-
-      windowLoop tCubeOrtho tCubePerspective
-
-monitor ortho perspective key isPressed = do
-  left  <- keyIsPressed KeyLeftShift
-  right <- keyIsPressed KeyRightShift
-
-  case (key, isPressed, left, right) of
-    (CharKey 'R', True, True, _   ) -> atomically $ modifyTVar' perspective toggleRotation
-    _                               -> return ()
-
-  case (key, isPressed, left, right) of
-    (CharKey 'R', True, _,    True) -> atomically $ modifyTVar' ortho toggleRotation
-    _                               -> return ()
-
-windowLoop cubeOrtho cubePerspective = do
+windowLoop tCubes = do
   continue <- windowIsOpen
   when continue $ do
-    ortho       <- readTVarIO cubeOrtho
-    perspective <- readTVarIO cubePerspective
-
+    cubes <- readTVarIO tCubes
     glLoadIdentity
     glClearColor 1 1 1 1
     glClear $ gl_COLOR_BUFFER_BIT .|. gl_DEPTH_BUFFER_BIT
-
-    render $ cube perspective
-    render $ cube ortho
-
+    mapM_ (render . cube) cubes
     swapBuffers
+    windowLoop tCubes
 
-    atomically $ modifyTVar' cubeOrtho       updateAngle
-    atomically $ modifyTVar' cubePerspective updateAngle
+monitor cubes (CharKey '=') True  = do
+  (vIsPressed, hIsPressed) <- selectorStatuses
+  when vIsPressed $ increasevFov cubes (pi/60.0)
+  when hIsPressed $ increasehFov cubes (pi/60.0)
+monitor cubes (CharKey '-') True  = do
+  (vIsPressed, hIsPressed) <- selectorStatuses
+  when vIsPressed $ decreasevFov cubes (pi/60.0)
+  when hIsPressed $ decreasehFov cubes (pi/60.0)
+monitor _ _ _ = return ()
 
-    windowLoop cubeOrtho cubePerspective
+selectorStatuses = do
+  vIsPressed <- keyIsPressed $ CharKey 'V'
+  hIsPressed <- keyIsPressed $ CharKey 'H'
+  return (vIsPressed, hIsPressed)
 
-updateAngle rCube | isRotating rCube = rCube { cube = (cubeModel { angle = (angle cubeModel) + 0.03} ) }
-                  | otherwise        = rCube
-                  where cubeModel = cube rCube
+increasevFov cubes amount = atomically $ modifyTVar' cubes $ map (\c -> c { cube = modifyvfov (cube c) (+ amount)})
+decreasevFov cubes amount = atomically $ modifyTVar' cubes $ map (\c -> c { cube = modifyvfov (cube c) (+ (-amount))})
 
-toggleRotation cube | isRotating cube = cube { isRotating = False }
-                    | otherwise       = cube { isRotating = True  }
+increasehFov cubes amount = atomically $ modifyTVar' cubes $ map (\c -> c { cube = modifyhfov (cube c) (+ amount)})
+decreasehFov cubes amount = atomically $ modifyTVar' cubes $ map (\c -> c { cube = modifyhfov (cube c) (+ (-amount))})
+
+modifyvfov cube f = cube { vfov = f (vfov cube) }
+modifyhfov cube f = cube { hfov = f (hfov cube) }

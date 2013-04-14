@@ -35,7 +35,7 @@ void main() {
   mat4 projection = mat4(
     vec4(    1.0,    0.0,     0.0,    0.0),
     vec4(    0.0,    1.0,     0.0,    0.0),
-    vec4(    0.0,    0.0,    -0.1,    0.0),
+    vec4(    0.0,    0.0,     0.1,    0.0),
     vec4(    0.0,    0.0,     0.0,    1.0));
 
   gl_Position = projection * translate * scale * rotateX * rotateZ * position;
