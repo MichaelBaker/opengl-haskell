@@ -27,17 +27,20 @@ data Cube = Cube { position :: Vertex
                  , face5    :: Face
                  }
 
-data CubeJob = CubeJob { job    :: Job
-                       , vfovId :: GLint
-                       , vfov   :: GLfloat
-                       , hfovId :: GLint
-                       , hfov   :: GLfloat
+data CubeJob = CubeJob { job        :: Job
+                       , vfovId     :: GLint
+                       , vfov       :: GLfloat
+                       , hfovId     :: GLint
+                       , hfov       :: GLfloat
+                       , sunAngleId :: GLint
+                       , sunAngle   :: GLfloat
                        }
 
 instance Renderable CubeJob where
-  render (CubeJob job vfovId vfov hfovId hfov) = do
-    glUniform1f vfovId vfov
-    glUniform1f hfovId hfov
+  render (CubeJob job vfovId vfov hfovId hfov sunAngleId sunAngle) = do
+    glUniform1f vfovId     vfov
+    glUniform1f hfovId     hfov
+    glUniform1f sunAngleId sunAngle
     render job
 
 theCube = Cube
@@ -47,7 +50,7 @@ theCube = Cube
         ( 1.0,  1.0, -1.0, 1.0 )
         ( 1.0, -1.0, -1.0, 1.0 )
         (-1.0, -1.0, -1.0, 1.0 )
-        ( 0.1,  0.1,  0.1, 1.0 ))
+        ( 0.5,  0.5,  0.5, 1.0 ))
 
   (Face ( 1.0,  1.0, -1.0, 1.0 )
         ( 1.0,  1.0,  1.0, 1.0 )
@@ -55,23 +58,23 @@ theCube = Cube
         ( 1.0, -1.0, -1.0, 1.0 )
         ( 1.0,  0.0,  0.0, 1.0 ))
 
+  (Face (-1.0, -1.0, -1.0, 1.0 )
+        (-1.0, -1.0,  1.0, 1.0 )
+        (-1.0,  1.0,  1.0, 1.0 )
+        (-1.0,  1.0, -1.0, 1.0 )
+        ( 1.0,  1.0,  1.0, 1.0 ))
+
   (Face (-1.0,  1.0,  1.0, 1.0 )
         ( 1.0,  1.0,  1.0, 1.0 )
         ( 1.0, -1.0,  1.0, 1.0 )
         (-1.0, -1.0,  1.0, 1.0 )
-        ( 0.2,  0.2,  0.2, 1.0 ))
-
-  (Face (-1.0,  1.0, -1.0, 1.0 )
-        (-1.0,  1.0,  1.0, 1.0 )
-        (-1.0, -1.0,  1.0, 1.0 )
-        (-1.0, -1.0, -1.0, 1.0 )
-        ( 1.0,  1.0,  1.0, 1.0 ))
+        ( 0.5,  0.5,  0.5, 1.0 ))
 
   (Face (-1.0,  1.0, -1.0, 1.0 )
         (-1.0,  1.0,  1.0, 1.0 )
         ( 1.0,  1.0,  1.0, 1.0 )
         ( 1.0,  1.0, -1.0, 1.0 )
-        ( 0.4,  0.4,  0.4, 1.0 ))
+        ( 0.5,  0.5,  0.5, 1.0 ))
 
   (Face (-1.0, -1.0, -1.0, 1.0 )
         (-1.0, -1.0,  1.0, 1.0 )
@@ -85,7 +88,8 @@ createCube shader (x, z) = do
   elements   <- createCubeElements
   vfov       <- createUniform program "vfov"
   hfov       <- createUniform program "hfov"
-  return $ CubeJob (Job program attributes elements) vfov (pi/2.0) hfov (pi/2.0)
+  sunAngle   <- createUniform program "sunAngle"
+  return $ CubeJob (Job program attributes elements) vfov (pi/2.0) hfov (pi/2.0) sunAngle (pi/2.0)
 
 cube x z = theCube { position = (x, 0.0, z, 1.0) }
 
@@ -99,16 +103,18 @@ createCubeAttributes program cube = do
   position    <- attributeId program "position"
   faceColor   <- attributeId program "faceColor"
   translation <- attributeId program "translation"
+  normal      <- attributeId program "normal"
 
   let vertexArray = attributeArray cube
   vertexArrayPtr <- newArray vertexArray
   vertexBuffer   <- createBuffer gl_ARRAY_BUFFER vertexArrayPtr (listSize vertexArray)
 
-  let positions    = AttributeArray vertexBuffer position    4 gl_FLOAT (fromIntegral $ 12 * floatSize) nullPtr
-      faceColors   = AttributeArray vertexBuffer faceColor   4 gl_FLOAT (fromIntegral $ 12 * floatSize) (createOffset floatSize 4)
-      translations = AttributeArray vertexBuffer translation 4 gl_FLOAT (fromIntegral $ 12 * floatSize) (createOffset floatSize 8)
+  let positions    = AttributeArray vertexBuffer position    4 gl_FLOAT (fromIntegral $ 16 * floatSize) nullPtr
+      faceColors   = AttributeArray vertexBuffer faceColor   4 gl_FLOAT (fromIntegral $ 16 * floatSize) (createOffset floatSize 4)
+      translations = AttributeArray vertexBuffer translation 4 gl_FLOAT (fromIntegral $ 16 * floatSize) (createOffset floatSize 8)
+      normals      = AttributeArray vertexBuffer normal      4 gl_FLOAT (fromIntegral $ 16 * floatSize) (createOffset floatSize 12)
 
-  return [positions, faceColors, translations]
+  return [positions, faceColors, translations, normals]
 
 createCubeElements = do
   elementArrayPtr <- newArray elementArray
@@ -132,10 +138,15 @@ attributeArray cube = concat arrays
 cubeAttributes position face = triangle0 ++ triangle1
   where triangle0            = concat [listify vertex2 vertex1 vertex0]
         triangle1            = concat [listify vertex0 vertex3 vertex2]
+        normal               = cross (minus (vertex2 face) (vertex1 face))
+                                     (minus (vertex0 face) (vertex1 face))
         detuple (a, b, c, d) = [a, b, c, d]
-        listify a b c        = concat $ map detuple [a face, color face, position,
-                                                     b face, color face, position,
-                                                     c face, color face, position]
+        listify a b c        = concat $ map detuple [a face, color face, position, normal,
+                                                     b face, color face, position, normal,
+                                                     c face, color face, position, normal]
+
+cross (a, b, c, d) (x, y, z, w) = (b*z - c*y, c*x - a*z, a*y - b*x, 1.0)
+minus (a, b, c, d) (x, y, z, w) = (a - x, b - y, c - z, 1.0)
 
 faces cube = [ face0 cube
              , face1 cube

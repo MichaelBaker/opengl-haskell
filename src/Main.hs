@@ -45,7 +45,10 @@ windowLoop tCubes = do
     glClear $ gl_COLOR_BUFFER_BIT .|. gl_DEPTH_BUFFER_BIT
     mapM_ (render . cube) cubes
     swapBuffers
+    atomically $ modifyTVar' tCubes (map updateSunAngle)
     windowLoop tCubes
+
+updateSunAngle inCube = inCube { cube = (cube inCube) {sunAngle = (sunAngle (cube inCube) + 0.01)} }
 
 monitor cubes (CharKey '=') True  = do
   (vIsPressed, hIsPressed) <- selectorStatuses
