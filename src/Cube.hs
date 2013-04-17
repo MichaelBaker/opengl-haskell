@@ -145,8 +145,8 @@ cubeAttributes position face = triangle0 ++ triangle1
                                                      b face, color face, position, normal,
                                                      c face, color face, position, normal]
 
-cross (a, b, c, d) (x, y, z, w) = (b*z - c*y, c*x - a*z, a*y - b*x, 1.0)
-minus (a, b, c, d) (x, y, z, w) = (a - x, b - y, c - z, 1.0)
+cross (a, b, c, _) (x, y, z, _) = (b*z - c*y, c*x - a*z, a*y - b*x, 1.0)
+minus (a, b, c, _) (x, y, z, _) = (a - x, b - y, c - z, 1.0)
 
 faces cube = [ face0 cube
              , face1 cube
