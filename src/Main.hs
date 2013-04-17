@@ -5,6 +5,7 @@ import Data.Bits
 import Control.Concurrent.STM
 
 import Cube
+import Sphere
 import Version
 import Renderable
 
@@ -32,20 +33,25 @@ main = do
       putStrLn versions
       cubes  <- mapM (createCube "perspective-2") [(x, z) | z <- [1,4..30], x <- [-2, 2]]
       tCubes <- newTVarIO cubes
+      sphere  <- createSphere
+      tCubes <- newTVarIO cubes
+      tSpheres <- newTVarIO [sphere]
       setKeyCallback $ monitor tCubes
-      windowLoop tCubes
+      windowLoop tCubes tSpheres
 
-windowLoop tCubes = do
+windowLoop tCubes tSpheres = do
   continue <- windowIsOpen
   when continue $ do
-    cubes <- readTVarIO tCubes
+    cubes   <- readTVarIO tCubes
+    spheres <- readTVarIO tSpheres
     glLoadIdentity
     glClearColor 1 1 1 1
     glClear $ gl_COLOR_BUFFER_BIT .|. gl_DEPTH_BUFFER_BIT
     mapM_ render cubes
+    mapM_ render spheres
     swapBuffers
     atomically $ modifyTVar' tCubes (map updateSunAngle)
-    windowLoop tCubes
+    windowLoop tCubes tSpheres
 
 updateSunAngle cube = cube { sunAngle = sunAngle cube + 0.01 }
 

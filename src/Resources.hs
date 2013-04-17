@@ -27,6 +27,7 @@ printVertexArray array = do
   print $ take 4 array
   printVertexArray $ drop 4 array
 
+createGenericAttributes :: GLuint -> [GLfloat] -> IO [AttributeArray]
 createGenericAttributes program verticies = do
   position    <- attributeId program "position"
   faceColor   <- attributeId program "faceColor"
@@ -80,6 +81,7 @@ createProgram shader = do
   program        <- compileProgram [vertexShader, fragmentShader]
   return program
 
+createElements :: [GLshort] -> IO ElementArray
 createElements items = do
   elementArrayPtr <- newArray items
   elementBuffer   <- createBuffer gl_ELEMENT_ARRAY_BUFFER elementArrayPtr (listSize items)
