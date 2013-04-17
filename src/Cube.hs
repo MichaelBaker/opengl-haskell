@@ -1,22 +1,10 @@
 module Cube where
 
-import Foreign
 import Graphics.Rendering.OpenGL.Raw
 
 import Job
 import Resources
 import Renderable
-
-type Vertex = (GLfloat, GLfloat, GLfloat, GLfloat)
-
-type Color = (GLfloat, GLfloat, GLfloat, GLfloat)
-
-data Face = Face { vertex0 :: Vertex
-                 , vertex1 :: Vertex
-                 , vertex2 :: Vertex
-                 , vertex3 :: Vertex
-                 , color   :: Color
-                 }
 
 data Cube = Cube { position :: Vertex
                  , face0    :: Face
@@ -25,6 +13,13 @@ data Cube = Cube { position :: Vertex
                  , face3    :: Face
                  , face4    :: Face
                  , face5    :: Face
+                 }
+
+data Face = Face { vertex0 :: Vertex
+                 , vertex1 :: Vertex
+                 , vertex2 :: Vertex
+                 , vertex3 :: Vertex
+                 , color   :: Color
                  }
 
 data CubeJob = CubeJob { job        :: Job
@@ -83,9 +78,9 @@ theCube = Cube
         ( 0.5,  0.5,  0.5, 1.0 ))
 
 createCube shader (x, z) = do
-  program    <- createCubeProgram shader
-  attributes <- createCubeAttributes program (cube x z)
-  elements   <- createCubeElements
+  program    <- createProgram shader
+  attributes <- createGenericAttributes program $ attributeArray (cube x z)
+  elements   <- createElements elementArray
   vfov       <- createUniform program "vfov"
   hfov       <- createUniform program "hfov"
   sunAngle   <- createUniform program "sunAngle"
@@ -93,43 +88,8 @@ createCube shader (x, z) = do
 
 cube x z = theCube { position = (x, 0.0, z, 1.0) }
 
-createCubeProgram shader = do
-  vertexShader   <- createShader gl_VERTEX_SHADER   $ concat ["../../shaders/", shader, ".v.glsl"]
-  fragmentShader <- createShader gl_FRAGMENT_SHADER $ concat ["../../shaders/", shader, ".f.glsl"]
-  program        <- createProgram [vertexShader, fragmentShader]
-  return program
-
-createCubeAttributes program cube = do
-  position    <- attributeId program "position"
-  faceColor   <- attributeId program "faceColor"
-  translation <- attributeId program "translation"
-  normal      <- attributeId program "normal"
-
-  let vertexArray = attributeArray cube
-  vertexArrayPtr <- newArray vertexArray
-  vertexBuffer   <- createBuffer gl_ARRAY_BUFFER vertexArrayPtr (listSize vertexArray)
-
-  let positions    = AttributeArray vertexBuffer position    4 gl_FLOAT (fromIntegral $ 16 * floatSize) nullPtr
-      faceColors   = AttributeArray vertexBuffer faceColor   4 gl_FLOAT (fromIntegral $ 16 * floatSize) (createOffset floatSize 4)
-      translations = AttributeArray vertexBuffer translation 4 gl_FLOAT (fromIntegral $ 16 * floatSize) (createOffset floatSize 8)
-      normals      = AttributeArray vertexBuffer normal      4 gl_FLOAT (fromIntegral $ 16 * floatSize) (createOffset floatSize 12)
-
-  return [positions, faceColors, translations, normals]
-
-createCubeElements = do
-  elementArrayPtr <- newArray elementArray
-  elementBuffer   <- createBuffer gl_ELEMENT_ARRAY_BUFFER elementArrayPtr (listSize elementArray)
-  return $ ElementArray elementBuffer gl_TRIANGLES (fromIntegral $ length elementArray) gl_UNSIGNED_SHORT
-
-createUniform = uniformId
-
-floatSize = sizeOf (0 :: GLfloat)
-createOffset typeSize amount = plusPtr nullPtr $ typeSize * amount
-
-printArray [] = return ()
-printArray array = do
-  print $ take 4 array
-  printArray $ drop 4 array
+modifyhfov cube f = cube { hfov = f $ hfov cube }
+modifyvfov cube f = cube { vfov = f $ vfov cube }
 
 attributeArray :: Cube -> [GLfloat]
 attributeArray cube = concat arrays
@@ -140,13 +100,9 @@ cubeAttributes position face = triangle0 ++ triangle1
         triangle1            = concat [listify vertex0 vertex3 vertex2]
         normal               = cross (minus (vertex2 face) (vertex1 face))
                                      (minus (vertex0 face) (vertex1 face))
-        detuple (a, b, c, d) = [a, b, c, d]
-        listify a b c        = concat $ map detuple [a face, color face, position, normal,
-                                                     b face, color face, position, normal,
-                                                     c face, color face, position, normal]
-
-cross (a, b, c, _) (x, y, z, _) = (b*z - c*y, c*x - a*z, a*y - b*x, 1.0)
-minus (a, b, c, _) (x, y, z, _) = (a - x, b - y, c - z, 1.0)
+        listify a b c        = flattenVerticies [a face, color face, position, normal,
+                                                 b face, color face, position, normal,
+                                                 c face, color face, position, normal]
 
 faces cube = [ face0 cube
              , face1 cube
@@ -155,8 +111,6 @@ faces cube = [ face0 cube
              , face4 cube
              , face5 cube
              ]
-
-listSize list = fromIntegral $ sizeOf (head list) * length list
 
 elementArray :: [GLshort]
 elementArray = [0..35]

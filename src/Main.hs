@@ -4,11 +4,10 @@ import Control.Monad
 import Data.Bits
 import Control.Concurrent.STM
 
+import Cube
 import Version
-import Cube (createCube, CubeJob(..))
 import Renderable
 
-data CubeView = CubeView { cube :: CubeJob }
 main = do
   initialize
   openWindow $ defaultDisplayOptions { displayOptions_numRedBits     = 8
@@ -32,7 +31,7 @@ main = do
     (Right versions) -> do
       putStrLn versions
       cubes  <- mapM (createCube "perspective-2") [(x, z) | z <- [1,4..30], x <- [-2, 2]]
-      tCubes <- newTVarIO $ map CubeView cubes
+      tCubes <- newTVarIO cubes
       setKeyCallback $ monitor tCubes
       windowLoop tCubes
 
@@ -43,21 +42,21 @@ windowLoop tCubes = do
     glLoadIdentity
     glClearColor 1 1 1 1
     glClear $ gl_COLOR_BUFFER_BIT .|. gl_DEPTH_BUFFER_BIT
-    mapM_ (render . cube) cubes
+    mapM_ render cubes
     swapBuffers
     atomically $ modifyTVar' tCubes (map updateSunAngle)
     windowLoop tCubes
 
-updateSunAngle inCube = inCube { cube = (cube inCube) {sunAngle = (sunAngle (cube inCube) + 0.01)} }
+updateSunAngle cube = cube { sunAngle = sunAngle cube + 0.01 }
 
 monitor cubes (CharKey '=') True  = do
   (vIsPressed, hIsPressed) <- selectorStatuses
-  when vIsPressed $ increasevFov cubes (pi/60.0)
-  when hIsPressed $ increasehFov cubes (pi/60.0)
+  when vIsPressed $ changevFov cubes (pi/60.0)
+  when hIsPressed $ changehFov cubes (pi/60.0)
 monitor cubes (CharKey '-') True  = do
   (vIsPressed, hIsPressed) <- selectorStatuses
-  when vIsPressed $ decreasevFov cubes (pi/60.0)
-  when hIsPressed $ decreasehFov cubes (pi/60.0)
+  when vIsPressed $ changevFov cubes (-pi/60.0)
+  when hIsPressed $ changehFov cubes (-pi/60.0)
 monitor _ _ _ = return ()
 
 selectorStatuses = do
@@ -65,11 +64,5 @@ selectorStatuses = do
   hIsPressed <- keyIsPressed $ CharKey 'H'
   return (vIsPressed, hIsPressed)
 
-increasevFov cubes amount = atomically $ modifyTVar' cubes $ map (\c -> c { cube = modifyvfov (cube c) (+ amount)})
-decreasevFov cubes amount = atomically $ modifyTVar' cubes $ map (\c -> c { cube = modifyvfov (cube c) (+ (-amount))})
-
-increasehFov cubes amount = atomically $ modifyTVar' cubes $ map (\c -> c { cube = modifyhfov (cube c) (+ amount)})
-decreasehFov cubes amount = atomically $ modifyTVar' cubes $ map (\c -> c { cube = modifyhfov (cube c) (+ (-amount))})
-
-modifyvfov cube f = cube { vfov = f (vfov cube) }
-modifyhfov cube f = cube { hfov = f (hfov cube) }
+changevFov cubes amount = atomically $ modifyTVar' cubes $ map (`modifyvfov` (+ amount))
+changehFov cubes amount = atomically $ modifyTVar' cubes $ map (`modifyhfov` (+ amount))
