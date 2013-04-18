@@ -31,11 +31,11 @@ main = do
     (Left  error)    -> putStrLn error
     (Right versions) -> do
       putStrLn versions
-      cubes  <- mapM (createCube "perspective-2") [(x, z) | z <- [1,4..30], x <- [-2, 2]]
-      tCubes <- newTVarIO cubes
-      sphere  <- createSphere
-      tCubes <- newTVarIO cubes
-      tSpheres <- newTVarIO [sphere]
+      cubes    <- mapM (createCube "perspective-2") [(-2, z) | z <- [1,4..30]]
+      tCubes   <- newTVarIO cubes
+      spheres  <- mapM createSphere [(2, z) | z <- [1,4..30]]
+      tCubes   <- newTVarIO cubes
+      tSpheres <- newTVarIO spheres
       setKeyCallback $ monitor tCubes
       windowLoop tCubes tSpheres
 
