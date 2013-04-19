@@ -67,8 +67,10 @@ createOffset typeSize amount = plusPtr nullPtr $ typeSize * amount
 
 cross (a, b, c, _) (x, y, z, _) = (b*z - c*y, c*x - a*z, a*y - b*x, 1.0)
 
-minus (a, b, c, _) (x, y, z, _) = (a - x, b - y, c - z, 1.0)
-plus  (a, b, c, _) (x, y, z, _) = (a + x, b + y, c + z, 1.0)
+minus     (a, b, c, _) (x, y, z, _) = (a - x, b - y, c - z, 1.0)
+plus      (a, b, c, _) (x, y, z, _) = (a + x, b + y, c + z, 1.0)
+midpoint  (a, b, c, _) (x, y, z, _) = ((a+x)/2.0, (b+y)/2.0, (c+z)/2.0, 1.0)
+normalize (x, y, z, w)              = (x/l, y/l, z/l, w) where l = sqrt $ (x^2) + (y^2) + (z^2)
 
 detuple (a, b, c, d) = [a, b, c, d]
 

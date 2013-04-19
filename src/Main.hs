@@ -33,8 +33,7 @@ main = do
       putStrLn versions
       cubes    <- mapM (createCube "perspective-2") [(-2, z) | z <- [1,4..30]]
       tCubes   <- newTVarIO cubes
-      spheres  <- mapM createSphere [(2, z) | z <- [1,4..30]]
-      tCubes   <- newTVarIO cubes
+      spheres  <- mapM (createSphere 3) [(2, z) | z <- [1,4..30]]
       tSpheres <- newTVarIO spheres
       setKeyCallback $ monitor tCubes
       windowLoop tCubes tSpheres
@@ -50,10 +49,12 @@ windowLoop tCubes tSpheres = do
     mapM_ render cubes
     mapM_ render spheres
     swapBuffers
-    atomically $ modifyTVar' tCubes (map updateSunAngle)
+    atomically $ modifyTVar' tCubes   (map updateSunAngle)
+    atomically $ modifyTVar' tSpheres (map updateSphereSunAngle)
     windowLoop tCubes tSpheres
 
-updateSunAngle cube = cube { sunAngle = sunAngle cube + 0.01 }
+updateSunAngle       cube   = cube   { sunAngle       = sunAngle cube + 0.01 }
+updateSphereSunAngle sphere = sphere { sphereSunAngle = sphereSunAngle sphere + 0.01 }
 
 monitor cubes (CharKey '=') True  = do
   (vIsPressed, hIsPressed) <- selectorStatuses
