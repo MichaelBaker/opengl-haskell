@@ -19,6 +19,7 @@ main = do
                                      , displayOptions_numDepthBits   = 24
                                      , displayOptions_width          = 1200
                                      , displayOptions_height         = 600
+                                     , displayOptions_numFsaaSamples = Just 16
                                      }
   glEnable gl_DEPTH_TEST
   glViewport 0 0 1200 600
@@ -33,7 +34,7 @@ main = do
       putStrLn versions
       cubes    <- mapM (createCube "perspective-2") [(-2, z) | z <- [1,4..30]]
       tCubes   <- newTVarIO cubes
-      spheres  <- mapM (createSphere 3) [(2, z) | z <- [1,4..30]]
+      spheres  <- mapM (createSphere 4) [(2, z) | z <- [1,4..30]]
       tSpheres <- newTVarIO spheres
       setKeyCallback $ monitor tCubes
       windowLoop tCubes tSpheres
@@ -54,7 +55,7 @@ windowLoop tCubes tSpheres = do
     windowLoop tCubes tSpheres
 
 updateSunAngle       cube   = cube   { sunAngle       = sunAngle cube + 0.01 }
-updateSphereSunAngle sphere = sphere { sphereSunAngle = sphereSunAngle sphere + 0.01 }
+updateSphereSunAngle sphere = sphere { sphereSunAngle = sphereSunAngle sphere + 0.04 }
 
 monitor cubes (CharKey '=') True  = do
   (vIsPressed, hIsPressed) <- selectorStatuses

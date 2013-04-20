@@ -29,11 +29,19 @@ void main() {
     vec4(     0.0,     0.0,     0.0,    1.0),
     vec4(     0.0,     0.0,    -0.1,    0.0));
 
+  vec3 sun  = normalize(vec3(cos(sunAngle), sin(sunAngle), Pi*sin(sunAngle)));
+  vec3 view = -normalize(position.xyz);
+
+  // Diffuse lighting
   vec4 irradiance = vec4(1.0, 1.0, 1.0, 1.0);
-  vec3 sun        = normalize(vec3(cos(sunAngle), sin(sunAngle), 0.5*sin(sunAngle)));
   vec4 norm       = normalize(normal);
-  vec4 lDiff      = faceColor * irradiance * max(dot(sun, norm.xyz), 0.0);
+  vec4 diffuse    = faceColor * irradiance * max(dot(sun, norm.xyz), 0.0);
+
+  // Specular lighting
+  vec3 h          = (view + sun)/length(view + sun);
+  float intensity = dot(normal.xyz, h)/(length(normal.xyz)*length(h));
+  vec4 specular   = 2.0 * irradiance * intensity;
 
   gl_Position = projection * translate * position;
-  color       = lDiff;
+  color       = -(diffuse + specular);
 }
