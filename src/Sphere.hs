@@ -19,9 +19,9 @@ instance Renderable SphereJob where
     glUniform1f angleId angle
     render job
 
-createSphere quality (x, z) = do
+createSphere quality (x, y, z) = do
   program    <- createProgram "sphere"
-  attributes <- createGenericAttributes program $ sphereAttributes quality x z
+  attributes <- createGenericAttributes program $ sphereAttributes quality x y z
   elements   <- createElements [0..(fromIntegral $ 20 * 3 * (4^quality))]
   sunAngle   <- createUniform program "sunAngle"
   return $ SphereJob quality sunAngle 0.0 $ Job program attributes elements
@@ -65,10 +65,10 @@ icosahedron = map makeTriangle indicies
                    , ( 9,  8,  1)
                    ]
 
-triangleArray x z (Triangle a b c) = concat $ map toList [a, b, c]
+triangleArray x y z (Triangle a b c) = concat $ map toList [a, b, c]
   where toList t = concat [ detuple t
                           , [1.0, 0.0, 0.0, 1.0]
-                          , [  x, 0.0,   z, 1.0]
+                          , [  x,   y,   z, 1.0]
                           , detuple t
                           ]
 
@@ -80,4 +80,4 @@ refineTriangle (Triangle a b c) = [Triangle a midAB midCA, Triangle b midBC midA
 refineSphere 0 ts = ts
 refineSphere q ts = refineSphere (q - 1) $ concat (map refineTriangle ts)
 
-sphereAttributes quality x z = concat $ map (triangleArray x z) (refineSphere quality icosahedron)
+sphereAttributes quality x y z = concat $ map (triangleArray x y z) (refineSphere quality icosahedron)

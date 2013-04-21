@@ -5,10 +5,14 @@ attribute vec4  position;
 attribute vec4  translation;
 attribute vec4  normal;
 attribute vec4  faceColor;
+
 uniform   float vfov;
 uniform   float hfov;
 uniform   float sunAngle;
-varying   vec4  color;
+
+varying vec4 vColor;
+varying vec4 vNormal;
+varying vec4 vPosition;
 
 void main() {
   mat4 translate = mat4(
@@ -29,19 +33,14 @@ void main() {
     vec4(     0.0,     0.0,     0.0,    1.0),
     vec4(     0.0,     0.0,    -0.1,    0.0));
 
-  vec3 sun  = normalize(vec3(cos(sunAngle), sin(sunAngle), Pi*sin(sunAngle)));
-  vec3 view = -normalize(position.xyz);
+  mat4 rotate = mat4(
+      vec4( cos(sunAngle), sin(sunAngle), 0.0, 0.0),
+      vec4(-sin(sunAngle), cos(sunAngle), 0.0, 0.0),
+      vec4(           0.0,           0.0, 1.0, 0.0),
+      vec4(           0.0,           0.0, 0.0, 1.0));
 
-  // Diffuse lighting
-  vec4 irradiance = vec4(1.0, 1.0, 1.0, 1.0);
-  vec4 norm       = normalize(normal);
-  vec4 diffuse    = faceColor * irradiance * max(dot(sun, norm.xyz), 0.0);
-
-  // Specular lighting
-  vec3 h          = (view + sun)/length(view + sun);
-  float intensity = dot(normal.xyz, h)/(length(normal.xyz)*length(h));
-  vec4 specular   = 2.0 * irradiance * intensity;
-
-  gl_Position = projection * translate * position;
-  color       = -(diffuse + specular);
+  gl_Position = projection * rotate * translate * position;
+  vColor      = faceColor;
+  vNormal     = normal;
+  vPosition   = gl_Position;
 }
