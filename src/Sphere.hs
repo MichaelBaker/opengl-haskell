@@ -9,22 +9,26 @@ import Renderable
 data SphereJob = SphereJob { quality          :: Int
                            , sphereSunAngleId :: GLint
                            , sphereSunAngle   :: GLfloat
+                           , aspectRatioId    :: GLint
+                           , aspectRatio      :: GLfloat
                            , job              :: Job
                            }
 
 data Triangle = Triangle Vertex Vertex Vertex
 
 instance Renderable SphereJob where
-  render (SphereJob _ angleId angle job) = do
-    glUniform1f angleId angle
+  render (SphereJob _ angleId angle aspectRatioId aspectRatio job) = do
+    glUniform1f angleId       angle
+    glUniform1f aspectRatioId aspectRatio
     render job
 
-createSphere quality (x, y, z) = do
-  program    <- createProgram "sphere"
-  attributes <- createGenericAttributes program $ sphereAttributes quality x y z
-  elements   <- createElements [0..(fromIntegral $ 20 * 3 * (4^quality))]
-  sunAngle   <- createUniform program "sunAngle"
-  return $ SphereJob quality sunAngle 0.0 $ Job program attributes elements
+createSphere quality aspectRatio (x, y, z) = do
+  program       <- createProgram "sphere"
+  attributes    <- createGenericAttributes program $ sphereAttributes quality x y z
+  elements      <- createElements [0..(fromIntegral $ 20 * 3 * (4^quality))]
+  sunAngleId    <- createUniform program "sunAngle"
+  aspectRatioId <- createUniform program "aspectRatio"
+  return $ SphereJob quality sunAngleId 0.0 aspectRatioId aspectRatio $ Job program attributes elements
 
 phi = (1.0 + sqrt 5.0) / 2.0
 
@@ -67,7 +71,7 @@ icosahedron = map makeTriangle indicies
 
 triangleArray x y z (Triangle a b c) = concat $ map toList [a, b, c]
   where toList t = concat [ detuple t
-                          , [1.0, 0.0, 0.0, 1.0]
+                          , [0.9, 0.1, 0.1, 1.0]
                           , [  x,   y,   z, 1.0]
                           , detuple t
                           ]

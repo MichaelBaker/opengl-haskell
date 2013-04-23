@@ -11,7 +11,8 @@ import Renderable
 main = do
   initialize
   videoModes <- getVideoModes
-  let mode = last videoModes
+  let mode        = last videoModes
+      aspectRatio = (fromIntegral $ videoMode_height mode) / (fromIntegral $ videoMode_width mode) :: GLfloat
   putStrLn $ "[VideoMode] " ++ (show mode)
   openWindow $ defaultDisplayOptions { displayOptions_numRedBits     = videoMode_numRedBits   mode
                                      , displayOptions_numGreenBits   = videoMode_numGreenBits mode
@@ -35,7 +36,7 @@ main = do
     (Left  error)    -> putStrLn error
     (Right versions) -> do
       putStrLn versions
-      spheres  <- mapM (createSphere 3) [(4.5 * cos a, 4.5 * sin a, z) | a <- [0,0.3..(pi*2)], z <- [8,10..16]]
+      spheres  <- mapM (createSphere 4 aspectRatio) [(4.0 * cos a, 4.0 * sin a, 13.0) | a <- [0.55,1.0..(pi * 2.0)]]
       tSpheres <- newTVarIO spheres
       windowLoop tSpheres
 
@@ -51,4 +52,6 @@ windowLoop tSpheres = do
     atomically $ modifyTVar' tSpheres (map updateSphereSunAngle)
     windowLoop tSpheres
 
-updateSphereSunAngle sphere = sphere { sphereSunAngle = sphereSunAngle sphere + 0.001 }
+clamp max value | value > max = 0
+                | otherwise   = value
+updateSphereSunAngle sphere = sphere { sphereSunAngle = clamp (2.0 * pi) $ sphereSunAngle sphere + 0.03 }

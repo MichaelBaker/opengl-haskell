@@ -4,22 +4,37 @@
 uniform float sunAngle;
 
 varying vec4 vColor;
-varying vec4 vNormal;
-varying vec4 vPosition;
+varying vec3 vNormal;
+varying vec3 vPosition;
+
+vec4 specular(vec3 normal, vec3 halfAngle, vec4 irradiance, float hardness);
+vec4 diffuse(vec4 color, vec3 sun, vec3 normal);
+vec4 global(vec4 color, float amount);
 
 void main() {
-  vec3 sun  = normalize(vec3(sin(sunAngle*10.0), cos(sunAngle*10.0), sin(sunAngle)));
-  vec3 view = -normalize(vPosition.xyz);
+  vec3 sun         = normalize(vec3(8.0 * cos(sunAngle), 0.0, 13.0 + (4.0 * sin(sunAngle*2.0))) - vPosition);
+  vec3 view        = normalize(-vPosition);
+  vec3 norm        = normalize(vNormal);
+  vec3 h           = normalize(view + sun);
+  vec4 irradiance  = vec4(1.0, 1.0, 1.0, 1.0);
 
-  // Diffuse lighting
-  vec4 irradiance = vec4(1.0, 1.0, 1.0, 1.0);
-  vec4 norm       = normalize(vNormal);
-  vec4 diffuse    = vColor * irradiance * max(dot(sun, norm.xyz), 0.0);
+  vec4 global   = global(vColor, 0.30);
+  vec4 diffuse  = diffuse(vColor, sun, norm);
+  vec4 specular = specular(norm, h, irradiance, 400.0);
 
-  // Specular lighting
-  vec3 h          = (view + sun)/length(view + sun);
-  float intensity = dot(vNormal.xyz, h)/(length(vNormal.xyz)*length(h));
-  vec4 specular   = 100.5 * vec4(1.0, 0.0, 0.0, 1.0) * intensity;
+  gl_FragColor = global + diffuse + specular;
+}
 
-  gl_FragColor = (diffuse + specular);
+vec4 specular(vec3 normal, vec3 halfAngle, vec4 irradiance, float hardness) {
+  float reflection = max(dot(normal, halfAngle), 0.0);
+  float intensity  = pow(reflection, hardness);
+  return irradiance * intensity;
+}
+
+vec4 diffuse(vec4 color, vec3 sun, vec3 normal) {
+  return color * max(dot(sun, normal), 0.0);
+}
+
+vec4 global(vec4 color, float amount) {
+  return color * amount;
 }
