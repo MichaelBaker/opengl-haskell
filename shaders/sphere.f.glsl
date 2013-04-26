@@ -6,6 +6,7 @@ uniform int   specular;
 uniform float shininess;
 uniform float sunAngle;
 uniform float gamma;
+uniform float range;
 
 varying vec4 vColor;
 varying vec3 vNormal;
@@ -16,6 +17,7 @@ vec4 gaussian(vec3 normal, vec3 halfAngle, vec4 irradiance, float hardness);
 vec4 diffuse(vec4 color, vec3 sun, vec3 normal);
 vec4 global(vec4 color, float amount);
 vec4 gammaCorrection(vec4 color, float power);
+vec4 colorCorrection(vec4 color, float gamma, float range);
 
 void main() {
   vec3 sun         = normalize(vec3(8.0 * cos(sunAngle), 0.0, 13.0 + (4.0 * sin(sunAngle*2.0))) - vPosition);
@@ -33,7 +35,11 @@ void main() {
   else if(specular == 2)
     specularHighlight = gaussian(norm, h, irradiance, shininess);
 
-  gl_FragColor = gammaCorrection(global + diffuse + specularHighlight, gamma);
+  gl_FragColor = colorCorrection(global + diffuse + specularHighlight, gamma, range);
+}
+
+vec4 colorCorrection(vec4 color, float gamma, float range) {
+  return gammaCorrection(color, gamma) / range;
 }
 
 vec4 gammaCorrection(vec4 color, float power) {

@@ -50,6 +50,9 @@ keypress spheres _ (CharKey '2') True = dispatch spheres (setSpecular 2)
 keypress spheres _ (CharKey 'G') True = do
   when shiftPressed    $ dispatch spheres (alterGamma (-0.05))
   when shiftNotPressed $ dispatch spheres (alterGamma   0.05)
+keypress spheres _ (CharKey 'R') True = do
+  when shiftPressed    $ dispatch spheres (alterRange (-0.05))
+  when shiftNotPressed $ dispatch spheres (alterRange   0.05)
 keypress _ updateSunAngle KeyEnter True = atomically $ modifyTVar' updateSunAngle not
 keypress _ _ _ _ = return ()
 
@@ -71,6 +74,7 @@ shiftNotPressed = do
 
 alterShininess amount sphere = sphere { shininess = shininess sphere + amount }
 alterGamma     amount sphere = sphere { gamma     = gamma sphere + amount }
+alterRange     amount sphere = sphere { range     = range sphere + amount }
 setSpecular    number sphere = sphere { specular  = number }
 
 windowLoop tSpheres tUpdateAngle = do
