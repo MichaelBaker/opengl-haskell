@@ -11,15 +11,21 @@ data SphereJob = SphereJob { quality          :: Int
                            , sphereSunAngle   :: GLfloat
                            , aspectRatioId    :: GLint
                            , aspectRatio      :: GLfloat
+                           , specularId       :: GLint
+                           , specular         :: GLint
+                           , shininessId      :: GLint
+                           , shininess        :: GLfloat
                            , job              :: Job
                            }
 
 data Triangle = Triangle Vertex Vertex Vertex
 
 instance Renderable SphereJob where
-  render (SphereJob _ angleId angle aspectRatioId aspectRatio job) = do
-    glUniform1f angleId       angle
-    glUniform1f aspectRatioId aspectRatio
+  render (SphereJob _ angleId angle aspectRatioId aspectRatio specularId specular shininessId shininess job) = do
+    glUniform1f angleId        angle
+    glUniform1f aspectRatioId  aspectRatio
+    glUniform1f shininessId    shininess
+    glUniform1i specularId     specular
     render job
 
 createSphere quality aspectRatio (x, y, z) = do
@@ -28,7 +34,9 @@ createSphere quality aspectRatio (x, y, z) = do
   elements      <- createElements [0..(fromIntegral $ 20 * 3 * (4^quality))]
   sunAngleId    <- createUniform program "sunAngle"
   aspectRatioId <- createUniform program "aspectRatio"
-  return $ SphereJob quality sunAngleId 0.0 aspectRatioId aspectRatio $ Job program attributes elements
+  specularId    <- createUniform program "specular"
+  shininessId   <- createUniform program "shininess"
+  return $ SphereJob quality sunAngleId 0.0 aspectRatioId aspectRatio specularId 0 shininessId 0.5 $ Job program attributes elements
 
 phi = (1.0 + sqrt 5.0) / 2.0
 

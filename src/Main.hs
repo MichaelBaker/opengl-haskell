@@ -1,6 +1,5 @@
 import Graphics.Rendering.OpenGL.Raw
 import Graphics.UI.GLFW
-import Control.Monad
 import Data.Bits
 import Control.Concurrent.STM
 
@@ -36,22 +35,60 @@ main = do
     (Left  error)    -> putStrLn error
     (Right versions) -> do
       putStrLn versions
-      spheres  <- mapM (createSphere 4 aspectRatio) [(4.0 * cos a, 4.0 * sin a, 13.0) | a <- [0.55,1.0..(pi * 2.0)]]
-      tSpheres <- newTVarIO spheres
-      windowLoop tSpheres
+      spheres         <- mapM (createSphere 4 aspectRatio) [(4.0 * cos a, 4.0 * sin a, 13.0) | a <- [0.55,1.0..(pi * 2.0)]]
+      tSpheres        <- newTVarIO spheres
+      tUpdateSunAngle <- newTVarIO False
+      enableKeyRepeat
+      setKeyCallback $ keypress tSpheres tUpdateSunAngle
+      windowLoop tSpheres tUpdateSunAngle
 
-windowLoop tSpheres = do
-  continue <- windowIsOpen
-  when continue $ do
+keypress spheres _ (CharKey '=') True = dispatch spheres (alterShininess 0.01)
+keypress spheres _ (CharKey '-') True = dispatch spheres (alterShininess (-0.01))
+keypress spheres _ (CharKey '0') True = dispatch spheres (setSpecular 0)
+keypress spheres _ (CharKey '1') True = dispatch spheres (setSpecular 1)
+keypress spheres _ (CharKey '2') True = dispatch spheres (setSpecular 2)
+keypress _ updateSunAngle KeyEnter True = atomically $ modifyTVar' updateSunAngle not
+keypress _ _ _ _ = return ()
+
+dispatch spheres f = do
+  when (keyIsPressed $ CharKey 'E') $ modifyEven spheres f
+  when (keyIsPressed $ CharKey 'O') $ modifyOdd  spheres f
+  when (keyIsPressed $ CharKey 'A') $ modifyAll  spheres f
+
+alterShininess amount sphere = sphere { shininess = shininess sphere + amount }
+
+setSpecular number sphere = sphere { specular = number }
+
+windowLoop tSpheres tUpdateAngle = do
+  when windowIsOpen $ do
     spheres <- readTVarIO tSpheres
     glLoadIdentity
     glClearColor 1 1 1 1
     glClear $ gl_COLOR_BUFFER_BIT .|. gl_DEPTH_BUFFER_BIT
     mapM_ render spheres
     swapBuffers
-    atomically $ modifyTVar' tSpheres (map updateSphereSunAngle)
-    windowLoop tSpheres
+    when (readTVarIO tUpdateAngle) $ modifyAll tSpheres updateSphereSunAngle
+    windowLoop tSpheres tUpdateAngle
 
 clamp max value | value > max = 0
                 | otherwise   = value
 updateSphereSunAngle sphere = sphere { sphereSunAngle = clamp (2.0 * pi) $ sphereSunAngle sphere + 0.03 }
+
+when predicate action = do
+  shouldRun <- predicate
+  case shouldRun of
+    True  -> action
+    False -> return ()
+
+modifyEven spheres f = atomically $ modifyTVar' spheres $ alterEven f
+modifyOdd  spheres f = atomically $ modifyTVar' spheres $ alterOdd  f
+modifyAll  spheres f = atomically $ modifyTVar' spheres $ alterAll  f
+
+alterAll f spheres = map f spheres
+
+alterEven f (a:b:rest) = a : f b : alterEven f rest
+alterEven _ rest       = rest
+
+alterOdd f (a:b:rest) = f a : b : alterOdd f rest
+alterOdd f (a:[])     = f a : []
+alterOdd _ rest       = rest

@@ -1,13 +1,17 @@
 #version 110
 #define Pi 3.1416
+#define E  2.71828
 
+uniform int   specular;
+uniform float shininess;
 uniform float sunAngle;
 
 varying vec4 vColor;
 varying vec3 vNormal;
 varying vec3 vPosition;
 
-vec4 specular(vec3 normal, vec3 halfAngle, vec4 irradiance, float hardness);
+vec4 blinnPhong(vec3 normal, vec3 halfAngle, vec4 irradiance, float hardness);
+vec4 gaussian(vec3 normal, vec3 halfAngle, vec4 irradiance, float hardness);
 vec4 diffuse(vec4 color, vec3 sun, vec3 normal);
 vec4 global(vec4 color, float amount);
 
@@ -18,16 +22,28 @@ void main() {
   vec3 h           = normalize(view + sun);
   vec4 irradiance  = vec4(1.0, 1.0, 1.0, 1.0);
 
-  vec4 global   = global(vColor, 0.30);
-  vec4 diffuse  = diffuse(vColor, sun, norm);
-  vec4 specular = specular(norm, h, irradiance, 400.0);
+  vec4 global            = global(vColor, 0.30);
+  vec4 diffuse           = diffuse(vColor, sun, norm);
+  vec4 specularHighlight = vec4(0.0, 0.0, 0.0, 0.0);
 
-  gl_FragColor = global + diffuse + specular;
+  if(specular == 1)
+    specularHighlight = blinnPhong(norm, h, irradiance, shininess*100.0);
+  else if(specular == 2)
+    specularHighlight = gaussian(norm, h, irradiance, shininess);
+
+  gl_FragColor = global + diffuse + specularHighlight;
 }
 
-vec4 specular(vec3 normal, vec3 halfAngle, vec4 irradiance, float hardness) {
+vec4 blinnPhong(vec3 normal, vec3 halfAngle, vec4 irradiance, float hardness) {
   float reflection = max(dot(normal, halfAngle), 0.0);
   float intensity  = pow(reflection, hardness);
+  return irradiance * intensity;
+}
+
+vec4 gaussian(vec3 normal, vec3 halfAngle, vec4 irradiance, float hardness) {
+  float reflection = dot(normal, halfAngle);
+  float power      = pow(acos(reflection)/hardness, 2.0);
+  float intensity  = max(pow(E, -power), 0.0);
   return irradiance * intensity;
 }
 
