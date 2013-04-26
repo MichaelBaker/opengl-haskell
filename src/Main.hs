@@ -22,7 +22,7 @@ main = do
                                      , displayOptions_numStencilBits = 8
                                      , displayOptions_numDepthBits   = 24
                                      , displayOptions_numFsaaSamples = Just 16
-                                     , displayOptions_displayMode    = Fullscreen
+                                     , displayOptions_displayMode    = Window
                                      }
   glEnable gl_DEPTH_TEST
   glViewport 0 0 (fromIntegral $ videoMode_width mode) (fromIntegral $ videoMode_height mode)
@@ -42,11 +42,14 @@ main = do
       setKeyCallback $ keypress tSpheres tUpdateSunAngle
       windowLoop tSpheres tUpdateSunAngle
 
-keypress spheres _ (CharKey '=') True = dispatch spheres (alterShininess 0.01)
+keypress spheres _ (CharKey '=') True = dispatch spheres (alterShininess   0.01)
 keypress spheres _ (CharKey '-') True = dispatch spheres (alterShininess (-0.01))
 keypress spheres _ (CharKey '0') True = dispatch spheres (setSpecular 0)
 keypress spheres _ (CharKey '1') True = dispatch spheres (setSpecular 1)
 keypress spheres _ (CharKey '2') True = dispatch spheres (setSpecular 2)
+keypress spheres _ (CharKey 'G') True = do
+  when shiftPressed    $ dispatch spheres (alterGamma (-0.05))
+  when shiftNotPressed $ dispatch spheres (alterGamma   0.05)
 keypress _ updateSunAngle KeyEnter True = atomically $ modifyTVar' updateSunAngle not
 keypress _ _ _ _ = return ()
 
@@ -55,9 +58,20 @@ dispatch spheres f = do
   when (keyIsPressed $ CharKey 'O') $ modifyOdd  spheres f
   when (keyIsPressed $ CharKey 'A') $ modifyAll  spheres f
 
-alterShininess amount sphere = sphere { shininess = shininess sphere + amount }
+shiftPressed :: IO Bool
+shiftPressed = do
+  left  <- keyIsPressed KeyLeftShift
+  right <- keyIsPressed KeyRightShift
+  return $ left || right
 
-setSpecular number sphere = sphere { specular = number }
+shiftNotPressed :: IO Bool
+shiftNotPressed = do
+  pressed <- shiftPressed
+  return $ not pressed
+
+alterShininess amount sphere = sphere { shininess = shininess sphere + amount }
+alterGamma     amount sphere = sphere { gamma     = gamma sphere + amount }
+setSpecular    number sphere = sphere { specular  = number }
 
 windowLoop tSpheres tUpdateAngle = do
   when windowIsOpen $ do

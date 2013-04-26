@@ -15,16 +15,19 @@ data SphereJob = SphereJob { quality          :: Int
                            , specular         :: GLint
                            , shininessId      :: GLint
                            , shininess        :: GLfloat
+                           , gammaId          :: GLint
+                           , gamma            :: GLfloat
                            , job              :: Job
                            }
 
 data Triangle = Triangle Vertex Vertex Vertex
 
 instance Renderable SphereJob where
-  render (SphereJob _ angleId angle aspectRatioId aspectRatio specularId specular shininessId shininess job) = do
+  render (SphereJob _ angleId angle aspectRatioId aspectRatio specularId specular shininessId shininess gammaId gamma job) = do
     glUniform1f angleId        angle
     glUniform1f aspectRatioId  aspectRatio
     glUniform1f shininessId    shininess
+    glUniform1f gammaId        gamma
     glUniform1i specularId     specular
     render job
 
@@ -36,7 +39,8 @@ createSphere quality aspectRatio (x, y, z) = do
   aspectRatioId <- createUniform program "aspectRatio"
   specularId    <- createUniform program "specular"
   shininessId   <- createUniform program "shininess"
-  return $ SphereJob quality sunAngleId 0.0 aspectRatioId aspectRatio specularId 0 shininessId 0.5 $ Job program attributes elements
+  gammaId       <- createUniform program "gamma"
+  return $ SphereJob quality sunAngleId 0.0 aspectRatioId aspectRatio specularId 0 shininessId 0.5 gammaId 0.45 $ Job program attributes elements
 
 phi = (1.0 + sqrt 5.0) / 2.0
 
@@ -79,7 +83,7 @@ icosahedron = map makeTriangle indicies
 
 triangleArray x y z (Triangle a b c) = concat $ map toList [a, b, c]
   where toList t = concat [ detuple t
-                          , [0.9, 0.1, 0.1, 1.0]
+                          , [1.0, 0.0, 0.0, 1.0]
                           , [  x,   y,   z, 1.0]
                           , detuple t
                           ]
