@@ -81,7 +81,7 @@ windowLoop tSpheres tUpdateAngle = do
   when windowIsOpen $ do
     spheres <- readTVarIO tSpheres
     glLoadIdentity
-    glClearColor 1 1 1 1
+    glClearColor 0 0 0 1
     glClear $ gl_COLOR_BUFFER_BIT .|. gl_DEPTH_BUFFER_BIT
     mapM_ render spheres
     swapBuffers

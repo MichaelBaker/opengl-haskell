@@ -44,7 +44,7 @@ createSphere quality aspectRatio (x, y, z) = do
   shininessId   <- createUniform program "shininess"
   gammaId       <- createUniform program "gamma"
   rangeId       <- createUniform program "range"
-  return $ SphereJob quality sunAngleId 0.0 aspectRatioId aspectRatio specularId 0 shininessId 0.5 gammaId 0.45 rangeId 1.0 $ Job program attributes elements
+  return $ SphereJob quality sunAngleId 0.0 aspectRatioId aspectRatio specularId 2 shininessId 0.08 gammaId 0.85 rangeId 1.25 $ Job program attributes elements
 
 phi = (1.0 + sqrt 5.0) / 2.0
 
