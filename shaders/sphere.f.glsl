@@ -12,27 +12,31 @@ varying vec4 vColor;
 varying vec3 vNormal;
 varying vec3 vPosition;
 
-vec4 blinnPhong        (vec3 normal, vec3 halfAngle, vec3 sun, vec4 irradiance, float hardness);
-vec4 gaussian          (vec3 normal, vec3 halfAngle, vec3 sun, vec4 irradiance, float hardness);
-vec4 diffuse           (vec4 color, vec3 sun, vec3 normal);
-vec4 global            (vec4 color, float amount);
-vec4 gammaCorrection   (vec4 color, float power);
-vec4 colorCorrection   (vec4 color, float gamma, float range);
-vec3 sunVector         (float sunAngle, vec3 surfacePosition);
-vec4 specularHighlight (int type, vec3 normal, vec3 halfAngle, vec3 sunVector, vec4 irradiance, float shininess);
+vec4  blinnPhong        (vec3 normal, vec3 halfAngle, vec3 sun, vec4 irradiance, float hardness);
+vec4  gaussian          (vec3 normal, vec3 halfAngle, vec3 sun, vec4 irradiance, float hardness);
+vec4  diffuse           (vec4 color, vec3 sun, vec3 normal);
+vec4  global            (vec4 color, float amount);
+vec4  gammaCorrection   (vec4 color, float power);
+vec4  colorCorrection   (vec4 color, float gamma, float range);
+vec3  sunVector         (float sunAngle, vec3 surfacePosition);
+vec3  sunPosition       (float angle);
+vec4  specularHighlight (int type, vec3 normal, vec3 halfAngle, vec3 sunVector, vec4 irradiance, float shininess);
+float distance          (vec3 a, vec3 b);
 
 void main() {
-  vec3 sun         = sunVector(sunAngle, vPosition);
-  vec3 view        = normalize(-vPosition);
-  vec3 normal      = normalize(vNormal);
-  vec3 halfAngle   = normalize(view + sun);
-  vec4 irradiance  = vec4(1.0, 1.0, 1.0, 1.0);
+  vec3 sun                = sunVector(sunAngle, vPosition);
+  vec3 view               = normalize(-vPosition);
+  vec3 normal             = normalize(vNormal);
+  vec3 halfAngle          = normalize(view + sun);
+  vec4 irradiance         = vec4(1.0, 1.0, 1.0, 1.0);
+  float distanceFromLight = distance(sunPosition(sunAngle), vPosition) / 3.0;
 
   vec4 globalLight   = global(vColor, 0.05);
   vec4 diffuseLight  = diffuse(vColor, sun, normal);
   vec4 specularLight = specularHighlight(specular, normal, halfAngle, sun, irradiance, shininess);
+  vec4 light         = (globalLight + diffuseLight + specularLight) / max(pow(distanceFromLight, 2.0), 1.0);
 
-  gl_FragColor = colorCorrection(globalLight + diffuseLight + specularLight, gamma, range);
+  gl_FragColor = colorCorrection(light, gamma, range);
 }
 
 vec4 specularHighlight(int type, vec3 normal, vec3 halfAngle, vec3 sunVector, vec4 irradiance, float shininess) {
@@ -46,8 +50,16 @@ vec4 specularHighlight(int type, vec3 normal, vec3 halfAngle, vec3 sunVector, ve
   return min(highlight * 7.0, 1.0) * 0.95;
 }
 
+float distance(vec3 a, vec3 b) {
+  return length(a - b);
+}
+
+vec3 sunPosition(float angle) {
+  return vec3(8.0 * cos(angle), 0.0, 13.0 + (4.0 * sin(angle*2.0)));
+}
+
 vec3 sunVector(float sunAngle, vec3 surfacePosition) {
-  return normalize(vec3(8.0 * cos(sunAngle), 0.0, 13.0 + (4.0 * sin(sunAngle*2.0))) - surfacePosition);
+  return normalize(sunPosition(sunAngle) - surfacePosition);
 }
 
 vec4 colorCorrection(vec4 color, float gamma, float range) {

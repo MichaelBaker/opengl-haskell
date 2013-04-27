@@ -90,7 +90,7 @@ windowLoop tSpheres tUpdateAngle = do
 
 clamp max value | value > max = 0
                 | otherwise   = value
-updateSphereSunAngle sphere = sphere { sphereSunAngle = clamp (2.0 * pi) $ sphereSunAngle sphere + 0.03 }
+updateSphereSunAngle sphere = sphere { sphereSunAngle = clamp (2.0 * pi) $ sphereSunAngle sphere + 0.02 }
 
 when predicate action = do
   shouldRun <- predicate
