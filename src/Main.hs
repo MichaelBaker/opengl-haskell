@@ -8,12 +8,20 @@ import Version
 import Renderable
 import Input
 import Utilities
+import FrameBuffer
+import RenderBuffer
+import Texture
+import WindowFrame
+import Blocks
 
 main = do
   initialize
   videoModes <- getVideoModes
   let mode        = last videoModes
-      aspectRatio = (fromIntegral $ videoMode_height mode) / (fromIntegral $ videoMode_width mode) :: GLfloat
+      height      = videoMode_height mode
+      width       = videoMode_width mode
+      aspectRatio = (fromIntegral width) / (fromIntegral height) :: GLfloat
+
   createWindow       mode
   initializeSettings mode
   glfwVersion <- getGlfwVersion
@@ -25,13 +33,32 @@ main = do
       putStrLn $ "[VideoMode] " ++ show mode
       putStrLn versions
 
-      spheres         <- mapM (createSphere 4 aspectRatio) spherePositions
-      tSpheres        <- newTVarIO spheres
-      tUpdateSunAngle <- newTVarIO False
+      textureId      <- createTexture width height
+      renderBufferId <- createRenderBuffer width height
+      frameBufferId  <- createFrameBuffer textureId renderBufferId
+      windowFrame    <- createWindowFrame textureId
+      blocks         <- createBlocks
 
-      enableKeyRepeat
-      setKeyCallback $ keypress tSpheres tUpdateSunAngle
-      windowLoop tSpheres tUpdateSunAngle
+      windowLoop blocks frameBufferId textureId windowFrame
+
+windowLoop blocks frameBufferId textureId windowFrame = do
+  when windowIsOpen $ do
+    glClearColor 1 1 1 1
+
+    glBindFramebuffer gl_FRAMEBUFFER frameBufferId
+    glClear $ gl_COLOR_BUFFER_BIT .|. gl_DEPTH_BUFFER_BIT
+    render blocks
+
+    glBindFramebuffer gl_FRAMEBUFFER 0
+    glClear $ gl_COLOR_BUFFER_BIT .|. gl_DEPTH_BUFFER_BIT
+
+    glBindTexture gl_TEXTURE_2D textureId
+    glGenerateMipmap gl_TEXTURE_2D
+
+    render windowFrame
+
+    swapBuffers
+    windowLoop blocks frameBufferId textureId windowFrame
 
 spherePositions = [(4.0 * cos a, 4.0 * sin a, 13.0) | a <- [0.0,(pi * 2.0)/5.0..(pi * 2.0)]]
 
@@ -50,13 +77,3 @@ initializeSettings mode = do
   glEnable gl_DEPTH_TEST
   glViewport 0 0 (fromIntegral $ videoMode_width mode) (fromIntegral $ videoMode_height mode)
   setWindowTitle "Ohai"
-
-windowLoop tSpheres tUpdateAngle = do
-  when windowIsOpen $ do
-    glLoadIdentity
-    glClearColor 1 1 1 1
-    glClear $ gl_COLOR_BUFFER_BIT .|. gl_DEPTH_BUFFER_BIT
-    readTVarIO tSpheres >>= mapM_ render
-    swapBuffers
-    when (readTVarIO tUpdateAngle) $ modifyAll tSpheres updateSphereSunAngle
-    windowLoop tSpheres tUpdateAngle

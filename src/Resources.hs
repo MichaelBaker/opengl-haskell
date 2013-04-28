@@ -71,7 +71,7 @@ normalize (x, y, z, w)              = (x/l, y/l, z/l, w) where l = sqrt $ (x^2) 
 
 detuple (a, b, c, d) = [a, b, c, d]
 
-flattenVerticies = concat . (map detuple)
+flattenVerticies = concat . map detuple
 
 listSize list = fromIntegral $ sizeOf (head list) * length list
 
