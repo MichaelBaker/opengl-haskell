@@ -5,48 +5,52 @@ import Graphics.Rendering.OpenGL.Raw
 import Job
 import Resources
 import Renderable
+import Uniform
 
 data SphereJob = SphereJob { quality          :: Int
-                           , sphereSunAngleId :: GLint
-                           , sphereSunAngle   :: GLfloat
-                           , aspectRatioId    :: GLint
-                           , aspectRatio      :: GLfloat
-                           , specularId       :: GLint
-                           , specular         :: GLint
-                           , shininessId      :: GLint
-                           , shininess        :: GLfloat
-                           , gammaId          :: GLint
-                           , gamma            :: GLfloat
-                           , rangeId          :: GLint
-                           , range            :: GLfloat
+                           , sphereSunAngle   :: Uniform GLfloat
+                           , aspectRatio      :: Uniform GLfloat
+                           , specular         :: Uniform GLint
+                           , shininess        :: Uniform GLfloat
+                           , gamma            :: Uniform GLfloat
+                           , range            :: Uniform GLfloat
                            , job              :: Job
                            }
 
 data Triangle = Triangle Vertex Vertex Vertex
 
 instance Renderable SphereJob where
-  render (SphereJob _ angleId angle aspectRatioId aspectRatio specularId specular shininessId shininess gammaId gamma rangeId range job) = do
-    glUniform1f angleId        angle
-    glUniform1f aspectRatioId  aspectRatio
-    glUniform1f shininessId    shininess
-    glUniform1f gammaId        gamma
-    glUniform1f rangeId        range
-    glUniform1i specularId     specular
-    render job
+  render sphere = do
+    render $ sphereSunAngle sphere
+    render $ aspectRatio    sphere
+    render $ specular       sphere
+    render $ shininess      sphere
+    render $ gamma          sphere
+    render $ range          sphere
+    render $ job            sphere
 
 createSphere quality aspectRatio (x, y, z) = do
-  program       <- createProgram "sphere"
-  attributes    <- createGenericAttributes program $ sphereAttributes quality x y z
-  elements      <- createElements [0..(fromIntegral $ 20 * 3 * (4^quality))]
-  sunAngleId    <- createUniform program "sunAngle"
-  aspectRatioId <- createUniform program "aspectRatio"
-  specularId    <- createUniform program "specular"
-  shininessId   <- createUniform program "shininess"
-  gammaId       <- createUniform program "gamma"
-  rangeId       <- createUniform program "range"
-  return $ SphereJob quality sunAngleId 0.0 aspectRatioId aspectRatio specularId 2 shininessId 0.08 gammaId 0.85 rangeId 1.25 $ Job program attributes elements
+  program     <- createProgram "sphere"
+  attributes  <- createGenericAttributes program $ sphereAttributes quality x y z
+  elements    <- createElements [0..(fromIntegral $ 20 * 3 * (4^quality))]
+  sunAngle    <- createUniformFloat program "sunAngle"    0.0
+  aspectRatio <- createUniformFloat program "aspectRatio" aspectRatio
+  shininess   <- createUniformFloat program "shininess"   0.08
+  gamma       <- createUniformFloat program "gamma"       0.85
+  range       <- createUniformFloat program "range"       1.25
+  specular    <- createUniformInt   program "specular"    2
+  return $ SphereJob quality sunAngle aspectRatio specular shininess gamma range $ Job program attributes elements
 
 phi = (1.0 + sqrt 5.0) / 2.0
+
+alterShininess amount sphere = sphere { shininess = alterUniform (shininess sphere) (+ amount) }
+alterGamma     amount sphere = sphere { gamma     = alterUniform (gamma sphere)     (+ amount) }
+alterRange     amount sphere = sphere { range     = alterUniform (range sphere)     (+ amount) }
+setSpecular    number sphere = sphere { specular  = setUniform (specular sphere)    number }
+
+clamp max value | value > max = 0
+                | otherwise   = value
+updateSphereSunAngle sphere = sphere { sphereSunAngle = alterUniform (sphereSunAngle sphere) $ clamp (2.0 * pi) . (+ 0.02) }
 
 icosahedron = map makeTriangle indicies
   where makeTriangle (a, b, c) = Triangle (normalize $ points !! a) (normalize $ points !! b) (normalize $ points !! c)

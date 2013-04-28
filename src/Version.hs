@@ -1,7 +1,7 @@
 module Version where
 
 import Data.Version
-import Control.Monad.Instances
+import Control.Monad.Instances()
 import Data.List
 
 checkVersions glfwVersion glVersion = validateVersions (versionBranch glfwVersion) (versionBranch glVersion)
