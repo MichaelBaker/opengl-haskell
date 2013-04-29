@@ -42,9 +42,6 @@ void main() {
     gl_FragColor = colorCorrection(globalLight + diffuseLight + specularLight, gamma, range);
     gl_FragDepth = gl_FragCoord.z;
   }
-
-  if(vPosition.x > 0.0)
-    gl_FragColor = vec4(0.0, 1.0, 0.0, 1.0);
 }
 
 vec4 specularHighlight(int type, vec3 normal, vec3 halfAngle, vec3 sunVector, vec4 irradiance, float shininess) {
