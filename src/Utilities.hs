@@ -16,4 +16,5 @@ glCheckErrors code | code == gl_INVALID_ENUM                  = error "[Error] I
                    | code == gl_OUT_OF_MEMORY                 = error "[Error] Out of memory"
                    | code == gl_INVALID_FRAMEBUFFER_OPERATION = error "[Error] Invalid framebuffer operation"
                    | code == gl_TABLE_TOO_LARGE               = error "[Error] Table too large"
+                   | code == gl_NO_ERROR                      = return ()
                    | otherwise                                = error "[Error] Unknown error code"

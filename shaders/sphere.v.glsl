@@ -7,6 +7,11 @@ attribute vec4  normal;
 attribute vec4  faceColor;
 
 uniform float aspectRatio;
+uniform int   specular;
+uniform float shininess;
+uniform float sunAngle;
+uniform float gamma;
+uniform float range;
 
 varying vec4 vColor;
 varying vec3 vNormal;
@@ -31,7 +36,14 @@ void main() {
     vec4(     0.0,     0.0,     0.0,    1.0),
     vec4(     0.0,     0.0,    -0.1,    0.0));
 
-  vec4 adjustedPosition = translate * position;
+  float spinRate = sunAngle * (translation.z/24.0);
+  mat4 rotation = mat4(
+    vec4(cos(spinRate), -sin(spinRate), 0.0, 0.0),
+    vec4(sin(spinRate),  cos(spinRate), 0.0, 0.0),
+    vec4(          0.0,            0.0, 1.0, 0.0),
+    vec4(          0.0,            0.0, 0.0, 1.0));
+
+  vec4 adjustedPosition = rotation * translate * position;
 
   gl_Position = projection * adjustedPosition;
   vColor      = faceColor;

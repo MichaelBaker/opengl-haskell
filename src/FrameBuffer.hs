@@ -8,10 +8,13 @@ createFrameBuffer textureId renderBufferId = do
   glGenFramebuffers 1 bufferPointer
   bufferId <- peek bufferPointer
   glBindFramebuffer gl_FRAMEBUFFER bufferId
-  glFramebufferTexture2D    gl_FRAMEBUFFER gl_COLOR_ATTACHMENT0 gl_TEXTURE_2D textureId 0
+
+  glFramebufferTexture2D  gl_FRAMEBUFFER gl_COLOR_ATTACHMENT0 gl_TEXTURE_2D textureId 0
   glFramebufferRenderbuffer gl_FRAMEBUFFER gl_DEPTH_ATTACHMENT  gl_RENDERBUFFER renderBufferId
+
   status <- glCheckFramebufferStatus gl_FRAMEBUFFER
   verifyFrameBuffer status
+
   glBindFramebuffer gl_FRAMEBUFFER 0
   return bufferId
 

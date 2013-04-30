@@ -12,7 +12,6 @@ import FrameBuffer
 import RenderBuffer
 import Texture
 import WindowFrame
-import Blocks
 
 main = do
   initialize
@@ -57,16 +56,16 @@ windowLoop tSpheres tUpdateAngle frameBufferId textureId windowFrame = do
     glBindFramebuffer gl_FRAMEBUFFER 0
     glClear $ gl_COLOR_BUFFER_BIT .|. gl_DEPTH_BUFFER_BIT
 
-    glBindTexture gl_TEXTURE_2D textureId
-    glGenerateMipmap gl_TEXTURE_2D
-
     render windowFrame
 
     swapBuffers
     when (readTVarIO tUpdateAngle) $ modifyAll tSpheres updateSphereSunAngle
     windowLoop tSpheres tUpdateAngle frameBufferId textureId windowFrame
 
-spherePositions = [(4.0 * cos a, 4.0 * sin a, 13.0) | a <- [0.0,(pi * 2.0)/5.0..(pi * 2.0)]]
+spherePositions = [(4.0 * cos a, 4.0 * sin a, 48.0) | a <- [0.0,(pi * 2.0)/10.0..(pi * 2.0)]] ++
+                  [(4.0 * cos a, 4.0 * sin a, 24.0) | a <- [0.0,(pi * 2.0)/10.0..(pi * 2.0)]] ++
+                  [(4.0 * cos a, 4.0 * sin a, 13.0) | a <- [0.0,(pi * 2.0)/10.0..(pi * 2.0)]] ++
+                  [(4.0 * cos a, 4.0 * sin a, 7.0) | a <- [0.0,(pi * 2.0)/10.0..(pi * 2.0)]]
 
 createWindow mode = openWindow $ defaultDisplayOptions { displayOptions_numRedBits     = videoMode_numRedBits   mode
                                                        , displayOptions_numGreenBits   = videoMode_numGreenBits mode
@@ -76,10 +75,13 @@ createWindow mode = openWindow $ defaultDisplayOptions { displayOptions_numRedBi
                                                        , displayOptions_numAlphaBits   = 8
                                                        , displayOptions_numStencilBits = 8
                                                        , displayOptions_numDepthBits   = 8
+                                                       , displayOptions_numFsaaSamples = Just 8
                                                        , displayOptions_displayMode    = Window
                                                        }
 
 initializeSettings mode = do
   glEnable gl_DEPTH_TEST
   glViewport 0 0 (fromIntegral $ videoMode_width mode) (fromIntegral $ videoMode_height mode)
+  glEnable    gl_BLEND
+  glBlendFunc gl_SRC_ALPHA gl_ONE_MINUS_SRC_ALPHA
   setWindowTitle "Ohai"

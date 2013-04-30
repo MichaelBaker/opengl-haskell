@@ -7,6 +7,7 @@ uniform float shininess;
 uniform float sunAngle;
 uniform float gamma;
 uniform float range;
+uniform float aspectRatio;
 
 varying vec4 vColor;
 varying vec3 vNormal;
@@ -34,14 +35,14 @@ void main() {
   vec4 diffuseLight  = diffuse(vColor, sun, normal);
   vec4 specularLight = specularHighlight(specular, normal, halfAngle, sun, irradiance, shininess);
 
-  float distanceFromEdge = 1.0 - abs(dot(center, normal));
-  if(distanceFromEdge > 0.9) {
-    gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
-    gl_FragDepth = gl_FragCoord.z - 0.1;
-  } else {
-    gl_FragColor = colorCorrection(globalLight + diffuseLight + specularLight, gamma, range);
-    gl_FragDepth = gl_FragCoord.z;
-  }
+  float feather = 0.045;
+  float width   = 0.6;
+  float distanceFromEdge = clamp(dot(center, normal), 0.0, 1.0);
+  float edge = smoothstep(width - feather, width, distanceFromEdge);
+  float trans = smoothstep(0.12, 0.29, distanceFromEdge);
+
+  vec4 color   = colorCorrection(globalLight + diffuseLight + specularLight, gamma, range) * edge;
+  gl_FragColor = vec4(color.xyz, trans);
 }
 
 vec4 specularHighlight(int type, vec3 normal, vec3 halfAngle, vec3 sunVector, vec4 irradiance, float shininess) {
