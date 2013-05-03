@@ -117,10 +117,19 @@ createShader shaderType filename = do
           poke len $ fromIntegral $ length sourceCode
           glShaderSource shader 1 sourceList len
           glCompileShader shader
+
           glGetShaderiv shader gl_COMPILE_STATUS shaderOk
           shaderOkVal <- peek shaderOk
+
           if shaderOkVal == 0
-            then error $ "Shader " ++ filename ++ " failed to compile"
+            then do
+              logLengthPointer <- malloc :: IO (Ptr GLint)
+              glGetShaderiv shader gl_INFO_LOG_LENGTH logLengthPointer
+              logLength <- peek logLengthPointer
+              logMessagePointer <- mallocArray (fromIntegral logLength) :: IO (Ptr GLchar)
+              glGetShaderInfoLog shader logLength nullPtr logMessagePointer
+              logMessage <- peekCString logMessagePointer
+              error $ "Shader " ++ filename ++ " failed to compile" ++ "\n" ++ logMessage
             else return shader
 
 createBuffer target bufferData size = do
