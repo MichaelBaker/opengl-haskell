@@ -8,7 +8,7 @@ import Renderable
 data Job = Job { program    :: GLuint
                , attributes :: [AttributeArray]
                , elements   :: ElementArray
-               }
+               } deriving (Show)
 
 instance Renderable Job where
   render (Job program attributes elements) = do

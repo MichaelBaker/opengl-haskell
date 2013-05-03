@@ -6,12 +6,7 @@ import Control.Concurrent.STM
 import Sphere
 import Version
 import Renderable
-import Input
 import Utilities
-import FrameBuffer
-import RenderBuffer
-import Texture
-import WindowFrame
 
 main = do
   initialize
@@ -31,41 +26,18 @@ main = do
     (Right versions) -> do
       putStrLn $ "[VideoMode] " ++ show mode
       putStrLn versions
+      sphere   <- createSphere 4 aspectRatio (0.0, 0.0, 4.0)
+      tSpheres <- newTVarIO [sphere]
+      windowLoop tSpheres
 
-      spheres         <- mapM (createSphere 4 aspectRatio) spherePositions
-      tSpheres        <- newTVarIO spheres
-      tUpdateSunAngle <- newTVarIO False
-
-      textureId      <- createTexture width height
-      renderBufferId <- createRenderBuffer width height
-      frameBufferId  <- createFrameBuffer textureId renderBufferId
-      windowFrame    <- createWindowFrame textureId
-
-      enableKeyRepeat
-      setKeyCallback $ keypress tSpheres tUpdateSunAngle
-      windowLoop tSpheres tUpdateSunAngle frameBufferId textureId windowFrame
-
-windowLoop tSpheres tUpdateAngle frameBufferId textureId windowFrame = do
+windowLoop tSpheres = do
   when windowIsOpen $ do
     glClearColor 1 1 1 1
-
-    glBindFramebuffer gl_FRAMEBUFFER frameBufferId
-    glClear $ gl_COLOR_BUFFER_BIT .|. gl_DEPTH_BUFFER_BIT
-    readTVarIO tSpheres >>= mapM_ render
-
     glBindFramebuffer gl_FRAMEBUFFER 0
     glClear $ gl_COLOR_BUFFER_BIT .|. gl_DEPTH_BUFFER_BIT
-
-    render windowFrame
-
+    readTVarIO tSpheres >>= mapM_ render
     swapBuffers
-    when (readTVarIO tUpdateAngle) $ modifyAll tSpheres updateSphereSunAngle
-    windowLoop tSpheres tUpdateAngle frameBufferId textureId windowFrame
-
-spherePositions = [(4.0 * cos a, 4.0 * sin a, 48.0) | a <- [0.0,(pi * 2.0)/10.0..(pi * 2.0)]] ++
-                  [(4.0 * cos a, 4.0 * sin a, 24.0) | a <- [0.0,(pi * 2.0)/10.0..(pi * 2.0)]] ++
-                  [(4.0 * cos a, 4.0 * sin a, 13.0) | a <- [0.0,(pi * 2.0)/10.0..(pi * 2.0)]] ++
-                  [(4.0 * cos a, 4.0 * sin a, 7.0) | a <- [0.0,(pi * 2.0)/10.0..(pi * 2.0)]]
+    windowLoop tSpheres
 
 createWindow mode = openWindow $ defaultDisplayOptions { displayOptions_numRedBits     = videoMode_numRedBits   mode
                                                        , displayOptions_numGreenBits   = videoMode_numGreenBits mode

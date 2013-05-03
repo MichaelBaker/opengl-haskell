@@ -6,7 +6,7 @@ import Renderable
 import Graphics.Rendering.OpenGL.Raw
 import Foreign.C.String
 
-data Uniform a = Uniform String GLint a
+data Uniform a = Uniform String GLint a deriving (Show)
 
 setUniform   (Uniform name uid _) value    = Uniform name uid value
 alterUniform (Uniform name uid oldValue) f = Uniform name uid $ f oldValue

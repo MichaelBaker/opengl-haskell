@@ -8,7 +8,7 @@ data ElementArray = ElementArray { elementBuffer :: GLuint
                                  , triangleType  :: GLenum
                                  , vertexCount   :: GLsizei
                                  , indexType     :: GLenum
-                                 }
+                                 } deriving (Show)
 
 data AttributeArray = AttributeArray { attributeBuffer :: GLuint
                                      , attribute       :: GLuint
@@ -16,7 +16,7 @@ data AttributeArray = AttributeArray { attributeBuffer :: GLuint
                                      , itemType        :: GLenum
                                      , vertexSize      :: GLsizei
                                      , offset          :: Ptr GLuint
-                                     }
+                                     } deriving (Show)
 
 type Vertex = (GLfloat, GLfloat, GLfloat, GLfloat)
 
