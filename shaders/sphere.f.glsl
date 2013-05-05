@@ -10,5 +10,7 @@ uniform sampler2D gradient;
 varying vec2 coordinate;
 
 void main() {
-  gl_FragColor = texture2D(gradient, (coordinate + 1.0)/2.0);
+  vec2 textureCoordinate = (coordinate + 1.0)/2.0;
+  textureCoordinate = textureCoordinate * textureCoordinate;
+  gl_FragColor = texture2D(gradient, textureCoordinate);
 }

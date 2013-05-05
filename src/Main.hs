@@ -8,6 +8,7 @@ import Sphere
 import Version
 import Renderable
 import Utilities
+import Texture
 
 main = do
   initialize

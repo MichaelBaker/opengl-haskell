@@ -30,7 +30,7 @@ createSphere quality aspectRatio (x, y, z) = do
   attributes  <- createGenericAttributes program $ sphereAttributes quality x y z
   elements    <- createElements [0..(fromIntegral $ 20 * 3 * (4^quality))]
   aspectRatio <- createUniformFloat program "aspectRatio" aspectRatio
-  textureId   <- create2DTexture
+  textureId   <- textureFromImage "josh-cheek" 192 192
   texture     <- createUniformInt program "gradient" 0
   return $ SphereJob quality aspectRatio texture textureId $ Job program attributes elements
 
