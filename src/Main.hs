@@ -2,6 +2,7 @@ import Graphics.Rendering.OpenGL.Raw
 import Graphics.UI.GLFW
 import Data.Bits
 import Control.Concurrent.STM
+import Codec.Image.DevIL
 
 import Sphere
 import Version
@@ -10,10 +11,11 @@ import Utilities
 
 main = do
   initialize
+  ilInit
   videoModes <- getVideoModes
   let mode        = last videoModes
       height      = videoMode_height mode
-      width       = videoMode_width mode
+      width       = videoMode_width  mode
       aspectRatio = (fromIntegral height) / (fromIntegral width) :: GLfloat
 
   createWindow       mode
@@ -36,14 +38,16 @@ windowLoop tSpheres = do
     glBindFramebuffer gl_FRAMEBUFFER 0
     glClear $ gl_COLOR_BUFFER_BIT .|. gl_DEPTH_BUFFER_BIT
     readTVarIO tSpheres >>= mapM_ render
+    glFlush
+    glFinish
     swapBuffers
     windowLoop tSpheres
 
 createWindow mode = openWindow $ defaultDisplayOptions { displayOptions_numRedBits     = videoMode_numRedBits   mode
                                                        , displayOptions_numGreenBits   = videoMode_numGreenBits mode
                                                        , displayOptions_numBlueBits    = videoMode_numBlueBits  mode
-                                                       , displayOptions_width          = videoMode_width        mode
-                                                       , displayOptions_height         = videoMode_height       mode
+                                                       , displayOptions_width          = videoMode_width mode
+                                                       , displayOptions_height         = videoMode_height mode
                                                        , displayOptions_numAlphaBits   = 8
                                                        , displayOptions_numStencilBits = 8
                                                        , displayOptions_numDepthBits   = 8

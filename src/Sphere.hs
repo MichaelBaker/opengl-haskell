@@ -6,9 +6,12 @@ import Job
 import Resources
 import Renderable
 import Uniform
+import Texture
 
 data SphereJob = SphereJob { quality     :: Int
                            , aspectRatio :: Uniform GLfloat
+                           , texture     :: Uniform GLint
+                           , textureId   :: GLuint
                            , job         :: Job
                            } deriving (Show)
 
@@ -16,7 +19,10 @@ data Triangle = Triangle Vertex Vertex Vertex
 
 instance Renderable SphereJob where
   render sphere = do
+    glActiveTexture gl_TEXTURE0
+    glBindTexture gl_TEXTURE_2D $ textureId sphere
     render $ aspectRatio    sphere
+    render $ texture        sphere
     render $ job            sphere
 
 createSphere quality aspectRatio (x, y, z) = do
@@ -24,7 +30,9 @@ createSphere quality aspectRatio (x, y, z) = do
   attributes  <- createGenericAttributes program $ sphereAttributes quality x y z
   elements    <- createElements [0..(fromIntegral $ 20 * 3 * (4^quality))]
   aspectRatio <- createUniformFloat program "aspectRatio" aspectRatio
-  return $ SphereJob quality aspectRatio $ Job program attributes elements
+  textureId   <- create2DTexture
+  texture     <- createUniformInt program "gradient" 0
+  return $ SphereJob quality aspectRatio texture textureId $ Job program attributes elements
 
 phi = (1.0 + sqrt 5.0) / 2.0
 

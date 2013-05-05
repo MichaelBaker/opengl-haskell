@@ -8,7 +8,7 @@ attribute vec4  faceColor;
 
 uniform float aspectRatio;
 
-varying vec4 vColor;
+varying vec2 coordinate;
 
 void main() {
   mat4 translate = mat4(
@@ -31,5 +31,5 @@ void main() {
   vec4 adjustedPosition = translate * position;
 
   gl_Position = projection * adjustedPosition;
-  vColor      = faceColor;
+  coordinate  = position.xy;
 }
