@@ -1,67 +1,112 @@
 #version 110
-#define CUBE 1.0/3.0
 
-varying vec3 p;
-varying vec3 p0;
-varying vec3 p1;
-varying vec3 p2;
+varying vec2 point;
+varying vec2 p0;
+varying vec2 p1;
+varying vec2 p2;
 
-float sum(vec3 v) {
-  return v.x + v.y+ v.z;
-}
-
-vec3 curve(float t) {
-  return (pow(1.0-t, 2.0)*p0) + ((2.0*(1.0-t)*t)*p1) + (t*t*p2);
-}
+float distance              (float root);
+float cubeRoot              (float a);
+float sum                   (vec2 a);
+float add                   (vec2 a);
+bool withinStroke           (float root, float strokeWidth);
+vec2 curve                  (float t);
+vec3 solveForThreeRealRoots (float a, float b, float c, float d, float g, float f, float h);
+vec3 solveForOneRealRoot    (float a, float b, float c, float d, float g, float f, float h);
+vec3 solveForEqualRoots     (float a, float b, float c, float d, float g, float f, float h);
+vec3 cubicRoots             (float a, float b, float c, float d);
+vec4 grey                   (float c, float root, float width);
 
 void main(void) {
-  vec3 av = (4.0*p1*p1) - (2.0*p1*p0) - (4.0*p2*p1) + (2.0*p0*p2) - (4.0*p0*p1) + (2.0*p0*p0) + (4.0*p1*p1) - (2.0*p0*p1);
-  vec3 bv = (-4.0*p1*p1) + (4.0*p1*p0) + (4.0*p2*p1) - (4.0*p2*p0) + (4.0*p0*p1) - (4.0*p0*p0) - (4.0*p1*p1) + (4.0*p0*p1) + (4.0*p0*p1) - (2.0*p0*p0) + (2.0*p1*p0);
-  vec3 cv = (-2.0*p1*p0) + (2.0*p2*p0) + (2.0*p0*p0) - (2.0*p0*p1) - (4.0*p0*p1) + (4.0*p0*p0) + (4.0*p1*p1) - (4.0*p1*p0) - (2.0*p*p1) + (2.0*p*p2) + (2.0*p*p0) - (2.0*p*p1);
-  vec3 dv = (-2.0*p0*p0) + (2.0*p1*p0) - (2.0*p*p0) + (2.0*p*p1);
+  vec2 alpha = p0 - (2.0 * p1) + p2;
+  vec2 beta  = 2.0 * (p1 - p0);
+  float a    = add(-2.0 * (alpha * alpha));
+  float b    = add(-3.0 * (alpha * beta));
+  float c    = add((2.0 * alpha * point) - (2.0 * alpha * p0) - (beta * beta));
+  float d    = add(beta * (point - p0));
 
-  float a = sum(av);
-  float b = sum(bv);
-  float c = sum(cv);
-  float d = sum(dv);
+  vec3 roots = cubicRoots(a, b, c, d);
+  float width = 0.05;
 
-  float s = ((3.0*a*c) - (b*b)) / (3.0*a*a);
-  float q = ((2.0*b*b*b) - (9.0*a*b*c) + (27.0*a*a*d)) / (27.0*a*a*a);
-
-  float q2   = (-q) / 2.0;
-  float qs4  = (q*q) / 4.0;
-  float pc27 = (s*s*s) / 27.0;
-
-  float x = sqrt(qs4 + pc27);
-
-  float y1= q2 + x;
-  float z1= q2 - x;
-
-  float y2= q2 + x;
-  float z2= q2 + x;
-
-  float y3= q2 - x;
-  float z3= q2 - x;
-
-  float u1 = pow(y1, (1.0/3.0));
-  float v1 = pow(z1, (1.0/3.0));
-
-  float u2 = pow(y2, (1.0/3.0));
-  float v2 = pow(z2, (1.0/3.0));
-
-  float u3 = pow(y3, (1.0/3.0));
-  float v3 = pow(z3, (1.0/3.0));
-
-  float t1 = u1 + v1;
-  float t2 = u2 + v2;
-  float t3 = u3 + v3;
-
-  if(t1 >= 0.0 && t1 <= 1.0 && length(p - curve(t1)) < 0.1)
-    gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
-  else if(t2 >= 0.0 && t2 <= 1.0 && length(p - curve(t2)) < 0.1)
-    gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
-  else if(t3 >= 0.0 && t3 <= 1.0 && length(p - curve(t3)) < 0.1)
-    gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+  if(withinStroke(roots.x, width))
+    gl_FragColor = grey(0.0, roots.x, width);
+  else if(withinStroke(roots.y, width))
+    gl_FragColor = grey(0.0, roots.y, width);
+  else if(withinStroke(roots.z, width))
+    gl_FragColor = grey(0.0, roots.z, width);
   else
     discard;
 }
+
+vec2 curve(float t) {
+  return (pow(1.0-t, 2.0)*p0) + (2.0*(1.0-t)*t*p1) + (pow(t, 2.0)*p2);
+}
+
+float distance(float root) {
+  return length(point - curve(root));
+}
+
+vec4 grey(float c, float root, float width) {
+  float alpha = smoothstep(0.0, 0.005, width - distance(root));
+  return vec4(c, c, c, alpha);
+}
+
+float sum(vec2 a) {
+  return a.x + a.y;
+}
+
+float cubeRoot(float a) {
+  if(a < 0.0)
+    return -pow(-a, 1.0/3.0);
+  else
+    return pow(a, 1.0/3.0);
+}
+
+bool withinStroke(float root, float strokeWidth) {
+  return root >= 0.0 && root <= 1.0 && distance(root) < strokeWidth;
+}
+
+float add(vec2 a) {
+  return a.x + a.y;
+}
+
+vec3 solveForThreeRealRoots(float a, float b, float c, float d, float g, float f, float h) {
+  float i  = sqrt((pow(g, 2.0) / 4.0) - h);
+  float j  = cubeRoot(i);
+  float k  = acos(-(g / (2.0*i)));
+  float l  = j * (-1.0);
+  float m  = cos(k / 3.0);
+  float n  = sqrt(3.0 * sin(k / 3.0));
+  float p  = (b / (3.0*a)) * (-1.0);
+  float x1 = (2.0*j) * (cos(k / 3.0)) + p;
+  float x2 = l * (m + n) + p;
+  float x3 = l * (m - n) + p;
+  return vec3(x1, x2, x3);
+}
+
+vec3 solveForOneRealRoot(float a, float b, float c, float d, float g, float f, float h) {
+  float r = -(g/2.0) + sqrt(h);
+  float s = cubeRoot(r);
+  float t = -(g/2.0) - sqrt(h);
+  float u = cubeRoot(t);
+  float x = (s + u) - (b / (3.0*a));
+  return vec3(x, -1.0, -1.0);
+}
+
+vec3 solveForEqualRoots(float a, float b, float c, float d, float g, float f, float h) {
+  float x = cubeRoot((d / a) * (-1.0));
+  return vec3(x, -1.0, -1.0);
+}
+
+vec3 cubicRoots(float a, float b, float c, float d) {
+  float f = ((3.0*a*c) - (b*b)) / (3.0*a*a);
+  float g = ((2.0*b*b*b) - (9.0*a*b*c) + (27.0*a*a*d)) / (27.0*a*a*a);
+  float h = (pow(g, 2.0) / 4.0) + (pow(f, 3.0) / 27.0);
+  if(h < 0.0)
+    return solveForThreeRealRoots(a, b, c, d, g, f, h);
+  else if(h > 0.0)
+    return solveForOneRealRoot(a, b, c, d, g, f, h);
+  else
+    return solveForEqualRoots(a, b, c, d, g, f, h);
+}
+

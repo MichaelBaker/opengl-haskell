@@ -23,8 +23,8 @@ main = do
     (Right versions) -> do
       putStrLn $ "[VideoMode] " ++ (show $ last videoModes)
       putStrLn versions
-      circle <- quadraticBezier (0, -1, 0) (0, 1, 0) (-1, 1, 0)
-      windowLoop [circle]
+      a <- strokedBezier ( 1, 1)  (0, 0) ( 1, -1)
+      windowLoop [a]
 
 windowLoop items = do
   when windowIsOpen $ do
