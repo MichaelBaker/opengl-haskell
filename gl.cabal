@@ -16,4 +16,5 @@ executable gl
                        OpenGLRaw         ==1.3.0.0,
                        stm               ==2.4,
                        Codec-Image-DevIL ==0.2.3,
-                       array             ==0.4.0.0
+                       array             ==0.4.0.0,
+                       random            ==1.0.1.1

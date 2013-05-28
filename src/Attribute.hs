@@ -27,7 +27,7 @@ data Attribute = Attribute { attributeId :: GLuint
                            } deriving (Show)
 
 fourFloatVector = AttributeDescription "fourFloatVector" 4 gl_FLOAT gl_FALSE
-singleFloat     = AttributeDescription "singleInt"       1 gl_FLOAT gl_FALSE
+singleFloat     = AttributeDescription "singleFloat"     1 gl_FLOAT gl_FALSE
 
 createAttributes :: GLuint -> [GLfloat] -> [AttributeDescription] -> IO [Attribute]
 createAttributes program dataPoints descriptions = do

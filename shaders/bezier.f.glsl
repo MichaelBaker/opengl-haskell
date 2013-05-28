@@ -1,5 +1,7 @@
 #version 110
 
+uniform sampler2D image;
+
 varying vec2 point;
 varying vec2 p0;
 varying vec2 p1;
@@ -8,37 +10,13 @@ varying vec2 av;
 varying vec2 bv;
 varying vec2 cv;
 varying vec2 dv;
+varying float collinear;
 
 float cubeRoot(float a) {
-  float sign = 1.0;
-
-  if(a < 0.0) {
-    sign = -1.0;
-    a    = -a;
-  }
-
-  float exponent = ceil(log2(a));
-  float mantissa = a / exp2(exponent);
-  float shx      = mod(exponent, 3.0);
-
-  if(shx > 0.0) shx -= 3.0;
-
-  exponent = (exponent - shx) / 3.0;
-  mantissa = mantissa * exp2(shx);
-
-  mantissa = (((( 45.2548339756803022511987494   * mantissa +
-                 192.2798368355061050458134625)  * mantissa +
-                 119.1654824285581628956914143)  * mantissa +
-                  13.43250139086239872172837314) * mantissa +
-                   0.1636161226585754240958355063)
-             /
-             (((( 14.80884093219134573786480845 * mantissa +
-                 151.9714051044435648658557668) * mantissa +
-                 168.5254414101568283957668343) * mantissa +
-                  33.9905941350215598754191872) * mantissa +
-                   1.0);
-
-  return mantissa * sign * exp2(exponent);
+  if(a >= 0.0)
+    return pow(a, 1.0/3.0);
+  else
+    return -pow(-a, 1.0/3.0);
 }
 
 vec2 curve(float t) {
@@ -53,8 +31,12 @@ vec4 grey(float c) {
   return vec4(c, c, c, 1.0);
 }
 
+float antiAlias(float root, float width) {
+  return smoothstep(0.0, 0.007, width - distance(point, curve(root)));
+}
+
 bool withinStroke(float root, float strokeWidth) {
-  return root >= 0.0 && root <= 1.0 && distance(point, curve(root)) < strokeWidth;
+  return root >= 0.0 && root <= 1.0 && distance(point, curve(root)) <= strokeWidth;
 }
 
 float add(vec2 a) {
@@ -107,8 +89,11 @@ float cubicRoot(float a, float b, float c, float d) {
     return solveForEqualRoots(a, b, c, d, g, f, h);
 }
 
-void main(void) {
-  float width = 0.05;
+float alpha(float width, float distanceFromEdge) {
+  return smoothstep(0.0, 0.005, width - distanceFromEdge);
+}
+
+void bezier(float width) {
   float a     = add(av);
   float b     = add(bv);
   float c     = add(cv);
@@ -116,8 +101,34 @@ void main(void) {
 
   float root = cubicRoot(a, b, c, d);
 
-  if(withinStroke(root, width))
-    gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
-  else
+  if(withinStroke(root, width)) {
+    float x = p0.x + (point.x - curve(root).x);
+    gl_FragColor = texture2D(image, vec2(x, root));
+    gl_FragColor.a = alpha(width, distance(point, curve(root)));
+  } else {
     discard;
+  }
+}
+
+void line(float width) {
+  vec2 unit = normalize(p2 - p0);
+  float distance = length((p0 - point) - (dot(p0 - point, unit) * unit));
+  float sign     = 1.0;
+
+  if(point.x < p0.x) sign = -1.0;
+
+  if(distance <= width) {
+    gl_FragColor = texture2D(image, vec2(p0.x + (distance * sign), point.y));
+    gl_FragColor.a = alpha(width, distance);
+  } else {
+    discard;
+  }
+}
+
+void main(void) {
+  float width = 0.006;
+  if(collinear == 1.0)
+    line(width);
+  else
+    bezier(width);
 }
